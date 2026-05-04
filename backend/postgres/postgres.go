@@ -724,8 +724,8 @@ func (be *postgresBackend) GetOrchestrationMetadata(ctx context.Context, iid api
 		*output,
 		*customStatus,
 		failureDetails,
-		parentInstanceID,
 	)
+	metadata.ParentInstanceID = parentInstanceID
 	return metadata, nil
 }
 

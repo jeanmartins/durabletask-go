@@ -708,8 +708,8 @@ func (be *sqliteBackend) GetOrchestrationMetadata(ctx context.Context, iid api.I
 		*output,
 		*customStatus,
 		failureDetails,
-		parentInstanceID,
 	)
+	metadata.ParentInstanceID = parentInstanceID
 	return metadata, nil
 }
 

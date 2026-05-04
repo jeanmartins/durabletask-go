@@ -201,7 +201,6 @@ func NewOrchestrationMetadata(
 	serializedOutput string,
 	serializedCustomStatus string,
 	failureDetails *protos.TaskFailureDetails,
-	parentInstanceID *string,
 ) *OrchestrationMetadata {
 	return &OrchestrationMetadata{
 		InstanceID:             iid,
@@ -213,7 +212,6 @@ func NewOrchestrationMetadata(
 		SerializedOutput:       serializedOutput,
 		SerializedCustomStatus: serializedCustomStatus,
 		FailureDetails:         failureDetails,
-		ParentInstanceID:       parentInstanceID,
 	}
 }
 
@@ -284,6 +282,9 @@ func (m *OrchestrationMetadata) UnmarshalJSON(data []byte) (err error) {
 		return fmt.Errorf("failed to unmarshal orchestration metadata json: %w", err)
 	}
 
+	// Save a reference to the original map before we potentially modify it for failureDetails
+	originalObj := obj
+
 	if id, ok := obj["id"]; ok {
 		m.InstanceID = InstanceID(id.(string))
 	} else {
@@ -350,7 +351,7 @@ func (m *OrchestrationMetadata) UnmarshalJSON(data []byte) (err error) {
 			}
 		}
 	}
-	if parentInstanceId, ok := obj["parentInstanceId"]; ok {
+	if parentInstanceId, ok := originalObj["parentInstanceId"]; ok {
 		parentInstanceID := parentInstanceId.(string)
 		m.ParentInstanceID = &parentInstanceID
 	}

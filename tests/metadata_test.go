@@ -30,7 +30,6 @@ func Test_OrchestrationMetadata_Serialization(t *testing.T) {
 				ErrorMessage: "Fuse lit",
 			},
 		},
-		nil,
 	)
 
 	if bytes, err := json.Marshal(metadata); assert.NoError(t, err) {
