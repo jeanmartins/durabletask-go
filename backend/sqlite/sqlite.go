@@ -470,6 +470,10 @@ func (be *sqliteBackend) createOrchestrationInstanceInternal(ctx context.Context
 }
 
 func insertOrIgnoreInstanceTableInternal(ctx context.Context, tx *sql.Tx, e *backend.HistoryEvent, startEvent *protos.ExecutionStartedEvent) (int64, error) {
+	var parentInstanceID *string
+	if pi := startEvent.GetParentInstance(); pi != nil {
+		parentInstanceID = &pi.OrchestrationInstance.InstanceId
+	}
 	res, err := tx.ExecContext(
 		ctx,
 		`INSERT OR IGNORE INTO [Instances] (
@@ -479,8 +483,9 @@ func insertOrIgnoreInstanceTableInternal(ctx context.Context, tx *sql.Tx, e *bac
 			[ExecutionID],
 			[Input],
 			[RuntimeStatus],
-			[CreatedTime]
-		) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			[CreatedTime],
+			[ParentInstanceID]
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		startEvent.Name,
 		startEvent.Version.GetValue(),
 		startEvent.OrchestrationInstance.InstanceId,
@@ -488,6 +493,7 @@ func insertOrIgnoreInstanceTableInternal(ctx context.Context, tx *sql.Tx, e *bac
 		startEvent.Input.GetValue(),
 		"PENDING",
 		e.Timestamp.AsTime(),
+		parentInstanceID,
 	)
 	if err != nil {
 		return -1, fmt.Errorf("failed to insert into [Instances] table: %w", err)
