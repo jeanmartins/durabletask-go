@@ -535,3 +535,55 @@ func getOrchestrationMetadata(t assert.TestingT, be backend.Backend, iid api.Ins
 
 	return nil, false
 }
+
+// Test_SubOrchestrationParentInstanceID verifies that when creating a sub-orchestration,
+// the child row persists the parent instance ID in the ParentInstanceID column.
+func Test_SubOrchestrationParentInstanceID(t *testing.T) {
+	for i, be := range backends {
+		initTest(t, be, i, true)
+
+		parentInstanceID := fmt.Sprintf("parent-instance-%d", i)
+		childInstanceID := fmt.Sprintf("child-instance-%d", i)
+
+		// Create parent orchestration instance
+		parentEvent := &protos.HistoryEvent{
+			Timestamp: timestamppb.Now(),
+			EventType: &protos.HistoryEvent_ExecutionStarted{
+				ExecutionStarted: &protos.ExecutionStartedEvent{
+					Name:                  "ParentOrchestration",
+					OrchestrationInstance: &protos.OrchestrationInstance{InstanceId: parentInstanceID},
+					Input:                 wrapperspb.String("parent-input"),
+				},
+			},
+		}
+		if !assert.NoError(t, be.CreateOrchestrationInstance(ctx, parentEvent, backend.WithOrchestrationIdReusePolicy(&protos.OrchestrationIdReusePolicy{}))) {
+			continue
+		}
+
+		// Create child orchestration instance with parent info
+		parentInfo := helpers.NewParentInfo(1, "ParentOrchestration", parentInstanceID)
+		childEvent := &protos.HistoryEvent{
+			Timestamp: timestamppb.Now(),
+			EventType: &protos.HistoryEvent_ExecutionStarted{
+				ExecutionStarted: &protos.ExecutionStartedEvent{
+					Name:                  "ChildOrchestration",
+					OrchestrationInstance: &protos.OrchestrationInstance{InstanceId: childInstanceID},
+					Input:                 wrapperspb.String("child-input"),
+					ParentInstance:        parentInfo,
+				},
+			},
+		}
+		if !assert.NoError(t, be.CreateOrchestrationInstance(ctx, childEvent, backend.WithOrchestrationIdReusePolicy(&protos.OrchestrationIdReusePolicy{}))) {
+			continue
+		}
+
+		// Verify the ParentInstanceID is set correctly using GetOrchestrationMetadata
+		childMetadata, err := be.GetOrchestrationMetadata(ctx, api.InstanceID(childInstanceID))
+		if assert.NoError(t, err) {
+			// Verify the parent instance ID is correctly set
+			if assert.NotNil(t, childMetadata.ParentInstanceID) {
+				assert.Equal(t, parentInstanceID, *childMetadata.ParentInstanceID)
+			}
+		}
+	}
+}

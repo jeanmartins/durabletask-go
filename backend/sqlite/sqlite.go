@@ -648,7 +648,7 @@ func (be *sqliteBackend) GetOrchestrationMetadata(ctx context.Context, iid api.I
 
 	row := be.db.QueryRowContext(
 		ctx,
-		`SELECT [InstanceID], [Name], [RuntimeStatus], [CreatedTime], [LastUpdatedTime], [Input], [Output], [CustomStatus], [FailureDetails]
+		`SELECT [InstanceID], [Name], [RuntimeStatus], [CreatedTime], [LastUpdatedTime], [Input], [Output], [CustomStatus], [FailureDetails], [ParentInstanceID]
 		FROM Instances WHERE [InstanceID] = ?`,
 		string(iid),
 	)
@@ -669,9 +669,10 @@ func (be *sqliteBackend) GetOrchestrationMetadata(ctx context.Context, iid api.I
 	var output *string
 	var customStatus *string
 	var failureDetails *protos.TaskFailureDetails
+	var parentInstanceID *string
 
 	var failureDetailsPayload []byte
-	err = row.Scan(&instanceID, &name, &runtimeStatus, &createdAt, &lastUpdatedAt, &input, &output, &customStatus, &failureDetailsPayload)
+	err = row.Scan(&instanceID, &name, &runtimeStatus, &createdAt, &lastUpdatedAt, &input, &output, &customStatus, &failureDetailsPayload, &parentInstanceID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, api.ErrInstanceNotFound
 	} else if err != nil {
@@ -707,6 +708,7 @@ func (be *sqliteBackend) GetOrchestrationMetadata(ctx context.Context, iid api.I
 		*output,
 		*customStatus,
 		failureDetails,
+		parentInstanceID,
 	)
 	return metadata, nil
 }

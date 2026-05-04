@@ -29,7 +29,9 @@ func Test_OrchestrationMetadata_Serialization(t *testing.T) {
 				ErrorType:    "InnerError",
 				ErrorMessage: "Fuse lit",
 			},
-		})
+		},
+		nil,
+	)
 
 	if bytes, err := json.Marshal(metadata); assert.NoError(t, err) {
 		metadata2 := new(api.OrchestrationMetadata)

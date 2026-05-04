@@ -59,6 +59,7 @@ type OrchestrationMetadata struct {
 	SerializedOutput       string
 	SerializedCustomStatus string
 	FailureDetails         *protos.TaskFailureDetails
+	ParentInstanceID       *string
 }
 
 // NewOrchestrationOptions configures options for starting a new orchestration.
@@ -200,6 +201,7 @@ func NewOrchestrationMetadata(
 	serializedOutput string,
 	serializedCustomStatus string,
 	failureDetails *protos.TaskFailureDetails,
+	parentInstanceID *string,
 ) *OrchestrationMetadata {
 	return &OrchestrationMetadata{
 		InstanceID:             iid,
@@ -211,6 +213,7 @@ func NewOrchestrationMetadata(
 		SerializedOutput:       serializedOutput,
 		SerializedCustomStatus: serializedCustomStatus,
 		FailureDetails:         failureDetails,
+		ParentInstanceID:       parentInstanceID,
 	}
 }
 
@@ -258,6 +261,9 @@ func (m *OrchestrationMetadata) MarshalJSON() ([]byte, error) {
 			current = inner
 		}
 		obj["failureDetails"] = root
+	}
+	if m.ParentInstanceID != nil {
+		obj["parentInstanceId"] = *m.ParentInstanceID
 	}
 	return json.Marshal(obj)
 }
@@ -343,6 +349,10 @@ func (m *OrchestrationMetadata) UnmarshalJSON(data []byte) (err error) {
 				break
 			}
 		}
+	}
+	if parentInstanceId, ok := obj["parentInstanceId"]; ok {
+		parentInstanceID := parentInstanceId.(string)
+		m.ParentInstanceID = &parentInstanceID
 	}
 	return nil
 }
