@@ -3,12 +3,13 @@ package tests
 import (
 	"context"
 	"fmt"
-	"github.com/microsoft/durabletask-go/backend/postgres"
 	"os"
 	"reflect"
 	"runtime"
 	"testing"
 	"time"
+
+	"github.com/microsoft/durabletask-go/backend/postgres"
 
 	"github.com/microsoft/durabletask-go/api"
 	"github.com/microsoft/durabletask-go/backend"
