@@ -499,6 +499,9 @@ func (be *postgresBackend) createOrchestrationInstanceInternal(ctx context.Conte
 func insertOrIgnoreInstanceTableInternal(ctx context.Context, tx pgx.Tx, e *backend.HistoryEvent, startEvent *protos.ExecutionStartedEvent) (int64, error) {
 	var parentInstanceID *string
 	if pi := startEvent.GetParentInstance(); pi != nil {
+		if pi.OrchestrationInstance == nil {
+			return -1, fmt.Errorf("parent instance is missing orchestration instance")
+		}
 		parentInstanceID = &pi.OrchestrationInstance.InstanceId
 	}
 	res, err := tx.Exec(
