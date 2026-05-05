@@ -523,6 +523,10 @@ func createGetInstanceResponse(req *protos.GetInstanceRequest, metadata *api.Orc
 		LastUpdatedTimestamp: timestamppb.New(metadata.LastUpdatedAt),
 	}
 
+	if metadata.ParentInstanceID != nil {
+		state.ParentInstanceId = wrapperspb.String(*metadata.ParentInstanceID)
+	}
+
 	if req.GetInputsAndOutputs {
 		state.Input = wrapperspb.String(metadata.SerializedInput)
 		state.CustomStatus = wrapperspb.String(metadata.SerializedCustomStatus)

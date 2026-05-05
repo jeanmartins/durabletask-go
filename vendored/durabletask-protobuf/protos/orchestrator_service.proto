@@ -315,6 +315,7 @@ message OrchestrationState {
     google.protobuf.StringValue output = 9;
     google.protobuf.StringValue customStatus = 10;
     TaskFailureDetails failureDetails = 11;
+    google.protobuf.StringValue parentInstanceId = 12;
 }
 
 message RaiseEventRequest {

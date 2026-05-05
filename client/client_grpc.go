@@ -246,5 +246,9 @@ func makeOrchestrationMetadata(resp *protos.GetInstanceResponse) (*api.Orchestra
 	if resp.OrchestrationState.LastUpdatedTimestamp != nil {
 		metadata.LastUpdatedAt = resp.OrchestrationState.LastUpdatedTimestamp.AsTime()
 	}
+	if resp.OrchestrationState.ParentInstanceId != nil {
+		parentInstanceID := resp.OrchestrationState.ParentInstanceId.GetValue()
+		metadata.ParentInstanceID = &parentInstanceID
+	}
 	return metadata, nil
 }

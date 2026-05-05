@@ -3120,6 +3120,7 @@ type OrchestrationState struct {
 	Output                  *wrappers.StringValue `protobuf:"bytes,9,opt,name=output,proto3" json:"output,omitempty"`
 	CustomStatus            *wrappers.StringValue `protobuf:"bytes,10,opt,name=customStatus,proto3" json:"customStatus,omitempty"`
 	FailureDetails          *TaskFailureDetails   `protobuf:"bytes,11,opt,name=failureDetails,proto3" json:"failureDetails,omitempty"`
+	ParentInstanceId        *wrappers.StringValue `protobuf:"bytes,12,opt,name=parentInstanceId,proto3" json:"parentInstanceId,omitempty"`
 }
 
 func (x *OrchestrationState) Reset() {
@@ -3227,6 +3228,13 @@ func (x *OrchestrationState) GetCustomStatus() *wrappers.StringValue {
 func (x *OrchestrationState) GetFailureDetails() *TaskFailureDetails {
 	if x != nil {
 		return x.FailureDetails
+	}
+	return nil
+}
+
+func (x *OrchestrationState) GetParentInstanceId() *wrappers.StringValue {
+	if x != nil {
+		return x.ParentInstanceId
 	}
 	return nil
 }
