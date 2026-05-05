@@ -12,6 +12,7 @@ import (
 )
 
 func Test_OrchestrationMetadata_Serialization(t *testing.T) {
+	parentInstanceID := "parent-123"
 	metadata := api.NewOrchestrationMetadata(
 		api.InstanceID("abc123"),
 		"MyOrchestration",
@@ -31,6 +32,7 @@ func Test_OrchestrationMetadata_Serialization(t *testing.T) {
 			},
 		},
 	)
+	metadata.ParentInstanceID = &parentInstanceID
 
 	if bytes, err := json.Marshal(metadata); assert.NoError(t, err) {
 		metadata2 := new(api.OrchestrationMetadata)
@@ -53,6 +55,9 @@ func Test_OrchestrationMetadata_Serialization(t *testing.T) {
 					assert.Nil(t, metadata2.FailureDetails.InnerFailure.StackTrace)
 					assert.Nil(t, metadata2.FailureDetails.InnerFailure.InnerFailure)
 				}
+			}
+			if assert.NotNil(t, metadata2.ParentInstanceID) {
+				assert.Equal(t, parentInstanceID, *metadata2.ParentInstanceID)
 			}
 		}
 	}
