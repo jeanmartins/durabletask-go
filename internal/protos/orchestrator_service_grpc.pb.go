@@ -11,7 +11,7 @@ package protos
 
 import (
 	context "context"
-	empty "google.golang.org/protobuf/types/known/emptypb"
+	empty "github.com/golang/protobuf/ptypes/empty"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
