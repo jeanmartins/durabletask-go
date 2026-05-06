@@ -506,3 +506,34 @@ func Test_Grpc_SubOrchestratorRetries(t *testing.T) {
 	// With 3 max attempts there will be two retries with 10 millis delay before each
 	require.GreaterOrEqual(t, metadata.LastUpdatedAt, metadata.CreatedAt.Add(2*10*time.Millisecond))
 }
+
+func Test_Grpc_SubOrchestrationParentInstanceID(t *testing.T) {
+	r := task.NewTaskRegistry()
+	childInstanceID := api.InstanceID("child-grpc-parent-id")
+	
+	require.NoError(t, r.AddOrchestratorN("Parent", func(ctx *task.OrchestrationContext) (any, error) {
+		ctx.CallSubOrchestrator("Child", task.WithSubOrchestrationInstanceID(string(childInstanceID)))
+		return nil, nil
+	}))
+	
+	require.NoError(t, r.AddOrchestratorN("Child", func(ctx *task.OrchestrationContext) (any, error) {
+		return "child result", nil
+	}))
+
+	cancelListener := startGrpcListener(t, r)
+	defer cancelListener()
+	parentInstanceID := api.InstanceID("parent-grpc-parent-id-test")
+
+	id, err := grpcClient.ScheduleNewOrchestration(ctx, "Parent", api.WithInstanceID(parentInstanceID))
+	require.NoError(t, err)
+	timeoutCtx, cancelTimeout := context.WithTimeout(ctx, 30*time.Second)
+	defer cancelTimeout()
+	_, err = grpcClient.WaitForOrchestrationCompletion(timeoutCtx, id)
+	require.NoError(t, err)
+
+	// Fetch child metadata via gRPC to verify ParentInstanceID is propagated
+	childMetadata, err := grpcClient.FetchOrchestrationMetadata(ctx, childInstanceID)
+	require.NoError(t, err)
+	require.NotNil(t, childMetadata.ParentInstanceID)
+	assert.Equal(t, string(parentInstanceID), *childMetadata.ParentInstanceID)
+}
