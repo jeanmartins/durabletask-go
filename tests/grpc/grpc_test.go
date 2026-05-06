@@ -335,8 +335,7 @@ func Test_Grpc_ReuseInstanceIDIgnore(t *testing.T) {
 	defer cancelListener()
 	instanceID := api.InstanceID("SKIP_IF_RUNNING_OR_COMPLETED")
 	reuseIdPolicy := &api.OrchestrationIdReusePolicy{
-		Action:          api.REUSE_ID_ACTION_IGNORE,
-		OperationStatus: []api.OrchestrationStatus{api.RUNTIME_STATUS_RUNNING, api.RUNTIME_STATUS_COMPLETED, api.RUNTIME_STATUS_PENDING},
+		ReplaceableStatus: []protos.OrchestrationStatus{protos.OrchestrationStatus_ORCHESTRATION_STATUS_RUNNING, protos.OrchestrationStatus_ORCHESTRATION_STATUS_COMPLETED, protos.OrchestrationStatus_ORCHESTRATION_STATUS_PENDING},
 	}
 
 	id, err := grpcClient.ScheduleNewOrchestration(ctx, "SingleActivity", api.WithInput("世界"), api.WithInstanceID(instanceID))
@@ -386,8 +385,7 @@ func Test_Grpc_ReuseInstanceIDTerminate(t *testing.T) {
 	defer cancelListener()
 	instanceID := api.InstanceID("TERMINATE_IF_RUNNING_OR_COMPLETED")
 	reuseIdPolicy := &api.OrchestrationIdReusePolicy{
-		Action:          api.REUSE_ID_ACTION_TERMINATE,
-		OperationStatus: []api.OrchestrationStatus{api.RUNTIME_STATUS_RUNNING, api.RUNTIME_STATUS_COMPLETED, api.RUNTIME_STATUS_PENDING},
+		ReplaceableStatus: []protos.OrchestrationStatus{protos.OrchestrationStatus_ORCHESTRATION_STATUS_RUNNING, protos.OrchestrationStatus_ORCHESTRATION_STATUS_COMPLETED, protos.OrchestrationStatus_ORCHESTRATION_STATUS_PENDING},
 	}
 
 	id, err := grpcClient.ScheduleNewOrchestration(ctx, "SingleActivity", api.WithInput("世界"), api.WithInstanceID(instanceID))

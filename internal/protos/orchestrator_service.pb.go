@@ -12,6 +12,7 @@ package protos
 import (
 	duration "github.com/golang/protobuf/ptypes/duration"
 	empty "github.com/golang/protobuf/ptypes/empty"
+	_struct "github.com/golang/protobuf/ptypes/struct"
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -92,52 +93,65 @@ func (OrchestrationStatus) EnumDescriptor() ([]byte, []int) {
 	return file_orchestrator_service_proto_rawDescGZIP(), []int{0}
 }
 
-type CreateOrchestrationAction int32
+type WorkerCapability int32
 
 const (
-	CreateOrchestrationAction_ERROR     CreateOrchestrationAction = 0
-	CreateOrchestrationAction_IGNORE    CreateOrchestrationAction = 1
-	CreateOrchestrationAction_TERMINATE CreateOrchestrationAction = 2
+	WorkerCapability_WORKER_CAPABILITY_UNSPECIFIED WorkerCapability = 0
+	// Indicates that the worker is capable of streaming instance history as a more optimized
+	// alternative to receiving the full history embedded in the orchestrator work-item.
+	// When set, the service may return work items without any history events as an optimization.
+	// It is strongly recommended that all SDKs support this capability.
+	WorkerCapability_WORKER_CAPABILITY_HISTORY_STREAMING WorkerCapability = 1
+	// Indicates that the worker supports scheduled tasks.
+	// The service may send schedule-triggered orchestration work items,
+	// and the worker must handle them, including the scheduledTime field.
+	WorkerCapability_WORKER_CAPABILITY_SCHEDULED_TASKS WorkerCapability = 2
+	// Signals that the worker can handle large payloads stored externally (e.g., Blob Storage).
+	// Work items may contain URI references instead of inline data, and the worker must fetch them.
+	// This avoids message size limits and reduces network overhead.
+	WorkerCapability_WORKER_CAPABILITY_LARGE_PAYLOADS WorkerCapability = 3
 )
 
-// Enum value maps for CreateOrchestrationAction.
+// Enum value maps for WorkerCapability.
 var (
-	CreateOrchestrationAction_name = map[int32]string{
-		0: "ERROR",
-		1: "IGNORE",
-		2: "TERMINATE",
+	WorkerCapability_name = map[int32]string{
+		0: "WORKER_CAPABILITY_UNSPECIFIED",
+		1: "WORKER_CAPABILITY_HISTORY_STREAMING",
+		2: "WORKER_CAPABILITY_SCHEDULED_TASKS",
+		3: "WORKER_CAPABILITY_LARGE_PAYLOADS",
 	}
-	CreateOrchestrationAction_value = map[string]int32{
-		"ERROR":     0,
-		"IGNORE":    1,
-		"TERMINATE": 2,
+	WorkerCapability_value = map[string]int32{
+		"WORKER_CAPABILITY_UNSPECIFIED":       0,
+		"WORKER_CAPABILITY_HISTORY_STREAMING": 1,
+		"WORKER_CAPABILITY_SCHEDULED_TASKS":   2,
+		"WORKER_CAPABILITY_LARGE_PAYLOADS":    3,
 	}
 )
 
-func (x CreateOrchestrationAction) Enum() *CreateOrchestrationAction {
-	p := new(CreateOrchestrationAction)
+func (x WorkerCapability) Enum() *WorkerCapability {
+	p := new(WorkerCapability)
 	*p = x
 	return p
 }
 
-func (x CreateOrchestrationAction) String() string {
+func (x WorkerCapability) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (CreateOrchestrationAction) Descriptor() protoreflect.EnumDescriptor {
+func (WorkerCapability) Descriptor() protoreflect.EnumDescriptor {
 	return file_orchestrator_service_proto_enumTypes[1].Descriptor()
 }
 
-func (CreateOrchestrationAction) Type() protoreflect.EnumType {
+func (WorkerCapability) Type() protoreflect.EnumType {
 	return &file_orchestrator_service_proto_enumTypes[1]
 }
 
-func (x CreateOrchestrationAction) Number() protoreflect.EnumNumber {
+func (x WorkerCapability) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use CreateOrchestrationAction.Descriptor instead.
-func (CreateOrchestrationAction) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use WorkerCapability.Descriptor instead.
+func (WorkerCapability) EnumDescriptor() ([]byte, []int) {
 	return file_orchestrator_service_proto_rawDescGZIP(), []int{1}
 }
 
@@ -200,6 +214,8 @@ type ActivityRequest struct {
 	Input                 *wrappers.StringValue  `protobuf:"bytes,3,opt,name=input,proto3" json:"input,omitempty"`
 	OrchestrationInstance *OrchestrationInstance `protobuf:"bytes,4,opt,name=orchestrationInstance,proto3" json:"orchestrationInstance,omitempty"`
 	TaskId                int32                  `protobuf:"varint,5,opt,name=taskId,proto3" json:"taskId,omitempty"`
+	ParentTraceContext    *TraceContext          `protobuf:"bytes,6,opt,name=parentTraceContext,proto3" json:"parentTraceContext,omitempty"`
+	Tags                  map[string]string      `protobuf:"bytes,7,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -269,14 +285,29 @@ func (x *ActivityRequest) GetTaskId() int32 {
 	return 0
 }
 
+func (x *ActivityRequest) GetParentTraceContext() *TraceContext {
+	if x != nil {
+		return x.ParentTraceContext
+	}
+	return nil
+}
+
+func (x *ActivityRequest) GetTags() map[string]string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
 type ActivityResponse struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	InstanceId     string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
-	TaskId         int32                  `protobuf:"varint,2,opt,name=taskId,proto3" json:"taskId,omitempty"`
-	Result         *wrappers.StringValue  `protobuf:"bytes,3,opt,name=result,proto3" json:"result,omitempty"`
-	FailureDetails *TaskFailureDetails    `protobuf:"bytes,4,opt,name=failureDetails,proto3" json:"failureDetails,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	InstanceId      string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
+	TaskId          int32                  `protobuf:"varint,2,opt,name=taskId,proto3" json:"taskId,omitempty"`
+	Result          *wrappers.StringValue  `protobuf:"bytes,3,opt,name=result,proto3" json:"result,omitempty"`
+	FailureDetails  *TaskFailureDetails    `protobuf:"bytes,4,opt,name=failureDetails,proto3" json:"failureDetails,omitempty"`
+	CompletionToken string                 `protobuf:"bytes,5,opt,name=completionToken,proto3" json:"completionToken,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *ActivityResponse) Reset() {
@@ -337,13 +368,21 @@ func (x *ActivityResponse) GetFailureDetails() *TaskFailureDetails {
 	return nil
 }
 
+func (x *ActivityResponse) GetCompletionToken() string {
+	if x != nil {
+		return x.CompletionToken
+	}
+	return ""
+}
+
 type TaskFailureDetails struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	ErrorType      string                 `protobuf:"bytes,1,opt,name=errorType,proto3" json:"errorType,omitempty"`
-	ErrorMessage   string                 `protobuf:"bytes,2,opt,name=errorMessage,proto3" json:"errorMessage,omitempty"`
-	StackTrace     *wrappers.StringValue  `protobuf:"bytes,3,opt,name=stackTrace,proto3" json:"stackTrace,omitempty"`
-	InnerFailure   *TaskFailureDetails    `protobuf:"bytes,4,opt,name=innerFailure,proto3" json:"innerFailure,omitempty"`
-	IsNonRetriable bool                   `protobuf:"varint,5,opt,name=isNonRetriable,proto3" json:"isNonRetriable,omitempty"`
+	state          protoimpl.MessageState    `protogen:"open.v1"`
+	ErrorType      string                    `protobuf:"bytes,1,opt,name=errorType,proto3" json:"errorType,omitempty"`
+	ErrorMessage   string                    `protobuf:"bytes,2,opt,name=errorMessage,proto3" json:"errorMessage,omitempty"`
+	StackTrace     *wrappers.StringValue     `protobuf:"bytes,3,opt,name=stackTrace,proto3" json:"stackTrace,omitempty"`
+	InnerFailure   *TaskFailureDetails       `protobuf:"bytes,4,opt,name=innerFailure,proto3" json:"innerFailure,omitempty"`
+	IsNonRetriable bool                      `protobuf:"varint,5,opt,name=isNonRetriable,proto3" json:"isNonRetriable,omitempty"`
+	Properties     map[string]*_struct.Value `protobuf:"bytes,6,rep,name=properties,proto3" json:"properties,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -411,6 +450,13 @@ func (x *TaskFailureDetails) GetIsNonRetriable() bool {
 		return x.IsNonRetriable
 	}
 	return false
+}
+
+func (x *TaskFailureDetails) GetProperties() map[string]*_struct.Value {
+	if x != nil {
+		return x.Properties
+	}
+	return nil
 }
 
 type ParentInstanceInfo struct {
@@ -553,6 +599,7 @@ type ExecutionStartedEvent struct {
 	ScheduledStartTimestamp *timestamp.Timestamp   `protobuf:"bytes,6,opt,name=scheduledStartTimestamp,proto3" json:"scheduledStartTimestamp,omitempty"`
 	ParentTraceContext      *TraceContext          `protobuf:"bytes,7,opt,name=parentTraceContext,proto3" json:"parentTraceContext,omitempty"`
 	OrchestrationSpanID     *wrappers.StringValue  `protobuf:"bytes,8,opt,name=orchestrationSpanID,proto3" json:"orchestrationSpanID,omitempty"`
+	Tags                    map[string]string      `protobuf:"bytes,9,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -639,6 +686,13 @@ func (x *ExecutionStartedEvent) GetParentTraceContext() *TraceContext {
 func (x *ExecutionStartedEvent) GetOrchestrationSpanID() *wrappers.StringValue {
 	if x != nil {
 		return x.OrchestrationSpanID
+	}
+	return nil
+}
+
+func (x *ExecutionStartedEvent) GetTags() map[string]string {
+	if x != nil {
+		return x.Tags
 	}
 	return nil
 }
@@ -761,6 +815,7 @@ type TaskScheduledEvent struct {
 	Version            *wrappers.StringValue  `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
 	Input              *wrappers.StringValue  `protobuf:"bytes,3,opt,name=input,proto3" json:"input,omitempty"`
 	ParentTraceContext *TraceContext          `protobuf:"bytes,4,opt,name=parentTraceContext,proto3" json:"parentTraceContext,omitempty"`
+	Tags               map[string]string      `protobuf:"bytes,5,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -819,6 +874,13 @@ func (x *TaskScheduledEvent) GetInput() *wrappers.StringValue {
 func (x *TaskScheduledEvent) GetParentTraceContext() *TraceContext {
 	if x != nil {
 		return x.ParentTraceContext
+	}
+	return nil
+}
+
+func (x *TaskScheduledEvent) GetTags() map[string]string {
+	if x != nil {
+		return x.Tags
 	}
 	return nil
 }
@@ -934,6 +996,7 @@ type SubOrchestrationInstanceCreatedEvent struct {
 	Version            *wrappers.StringValue  `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
 	Input              *wrappers.StringValue  `protobuf:"bytes,4,opt,name=input,proto3" json:"input,omitempty"`
 	ParentTraceContext *TraceContext          `protobuf:"bytes,5,opt,name=parentTraceContext,proto3" json:"parentTraceContext,omitempty"`
+	Tags               map[string]string      `protobuf:"bytes,6,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -999,6 +1062,13 @@ func (x *SubOrchestrationInstanceCreatedEvent) GetInput() *wrappers.StringValue 
 func (x *SubOrchestrationInstanceCreatedEvent) GetParentTraceContext() *TraceContext {
 	if x != nil {
 		return x.ParentTraceContext
+	}
+	return nil
+}
+
+func (x *SubOrchestrationInstanceCreatedEvent) GetTags() map[string]string {
+	if x != nil {
+		return x.Tags
 	}
 	return nil
 }
@@ -1607,6 +1677,558 @@ func (x *ExecutionResumedEvent) GetInput() *wrappers.StringValue {
 	return nil
 }
 
+type EntityOperationSignaledEvent struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	RequestId        string                 `protobuf:"bytes,1,opt,name=requestId,proto3" json:"requestId,omitempty"`
+	Operation        string                 `protobuf:"bytes,2,opt,name=operation,proto3" json:"operation,omitempty"`
+	ScheduledTime    *timestamp.Timestamp   `protobuf:"bytes,3,opt,name=scheduledTime,proto3" json:"scheduledTime,omitempty"`
+	Input            *wrappers.StringValue  `protobuf:"bytes,4,opt,name=input,proto3" json:"input,omitempty"`
+	TargetInstanceId *wrappers.StringValue  `protobuf:"bytes,5,opt,name=targetInstanceId,proto3" json:"targetInstanceId,omitempty"` // used only within histories, null in messages
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *EntityOperationSignaledEvent) Reset() {
+	*x = EntityOperationSignaledEvent{}
+	mi := &file_orchestrator_service_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EntityOperationSignaledEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EntityOperationSignaledEvent) ProtoMessage() {}
+
+func (x *EntityOperationSignaledEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EntityOperationSignaledEvent.ProtoReflect.Descriptor instead.
+func (*EntityOperationSignaledEvent) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *EntityOperationSignaledEvent) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *EntityOperationSignaledEvent) GetOperation() string {
+	if x != nil {
+		return x.Operation
+	}
+	return ""
+}
+
+func (x *EntityOperationSignaledEvent) GetScheduledTime() *timestamp.Timestamp {
+	if x != nil {
+		return x.ScheduledTime
+	}
+	return nil
+}
+
+func (x *EntityOperationSignaledEvent) GetInput() *wrappers.StringValue {
+	if x != nil {
+		return x.Input
+	}
+	return nil
+}
+
+func (x *EntityOperationSignaledEvent) GetTargetInstanceId() *wrappers.StringValue {
+	if x != nil {
+		return x.TargetInstanceId
+	}
+	return nil
+}
+
+type EntityOperationCalledEvent struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	RequestId         string                 `protobuf:"bytes,1,opt,name=requestId,proto3" json:"requestId,omitempty"`
+	Operation         string                 `protobuf:"bytes,2,opt,name=operation,proto3" json:"operation,omitempty"`
+	ScheduledTime     *timestamp.Timestamp   `protobuf:"bytes,3,opt,name=scheduledTime,proto3" json:"scheduledTime,omitempty"`
+	Input             *wrappers.StringValue  `protobuf:"bytes,4,opt,name=input,proto3" json:"input,omitempty"`
+	ParentInstanceId  *wrappers.StringValue  `protobuf:"bytes,5,opt,name=parentInstanceId,proto3" json:"parentInstanceId,omitempty"`   // used only within messages, null in histories
+	ParentExecutionId *wrappers.StringValue  `protobuf:"bytes,6,opt,name=parentExecutionId,proto3" json:"parentExecutionId,omitempty"` // used only within messages, null in histories
+	TargetInstanceId  *wrappers.StringValue  `protobuf:"bytes,7,opt,name=targetInstanceId,proto3" json:"targetInstanceId,omitempty"`   // used only within histories, null in messages
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *EntityOperationCalledEvent) Reset() {
+	*x = EntityOperationCalledEvent{}
+	mi := &file_orchestrator_service_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EntityOperationCalledEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EntityOperationCalledEvent) ProtoMessage() {}
+
+func (x *EntityOperationCalledEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EntityOperationCalledEvent.ProtoReflect.Descriptor instead.
+func (*EntityOperationCalledEvent) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *EntityOperationCalledEvent) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *EntityOperationCalledEvent) GetOperation() string {
+	if x != nil {
+		return x.Operation
+	}
+	return ""
+}
+
+func (x *EntityOperationCalledEvent) GetScheduledTime() *timestamp.Timestamp {
+	if x != nil {
+		return x.ScheduledTime
+	}
+	return nil
+}
+
+func (x *EntityOperationCalledEvent) GetInput() *wrappers.StringValue {
+	if x != nil {
+		return x.Input
+	}
+	return nil
+}
+
+func (x *EntityOperationCalledEvent) GetParentInstanceId() *wrappers.StringValue {
+	if x != nil {
+		return x.ParentInstanceId
+	}
+	return nil
+}
+
+func (x *EntityOperationCalledEvent) GetParentExecutionId() *wrappers.StringValue {
+	if x != nil {
+		return x.ParentExecutionId
+	}
+	return nil
+}
+
+func (x *EntityOperationCalledEvent) GetTargetInstanceId() *wrappers.StringValue {
+	if x != nil {
+		return x.TargetInstanceId
+	}
+	return nil
+}
+
+type EntityLockRequestedEvent struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	CriticalSectionId string                 `protobuf:"bytes,1,opt,name=criticalSectionId,proto3" json:"criticalSectionId,omitempty"`
+	LockSet           []string               `protobuf:"bytes,2,rep,name=lockSet,proto3" json:"lockSet,omitempty"`
+	Position          int32                  `protobuf:"varint,3,opt,name=position,proto3" json:"position,omitempty"`
+	ParentInstanceId  *wrappers.StringValue  `protobuf:"bytes,4,opt,name=parentInstanceId,proto3" json:"parentInstanceId,omitempty"` // used only within messages, null in histories
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *EntityLockRequestedEvent) Reset() {
+	*x = EntityLockRequestedEvent{}
+	mi := &file_orchestrator_service_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EntityLockRequestedEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EntityLockRequestedEvent) ProtoMessage() {}
+
+func (x *EntityLockRequestedEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EntityLockRequestedEvent.ProtoReflect.Descriptor instead.
+func (*EntityLockRequestedEvent) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *EntityLockRequestedEvent) GetCriticalSectionId() string {
+	if x != nil {
+		return x.CriticalSectionId
+	}
+	return ""
+}
+
+func (x *EntityLockRequestedEvent) GetLockSet() []string {
+	if x != nil {
+		return x.LockSet
+	}
+	return nil
+}
+
+func (x *EntityLockRequestedEvent) GetPosition() int32 {
+	if x != nil {
+		return x.Position
+	}
+	return 0
+}
+
+func (x *EntityLockRequestedEvent) GetParentInstanceId() *wrappers.StringValue {
+	if x != nil {
+		return x.ParentInstanceId
+	}
+	return nil
+}
+
+type EntityOperationCompletedEvent struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequestId     string                 `protobuf:"bytes,1,opt,name=requestId,proto3" json:"requestId,omitempty"`
+	Output        *wrappers.StringValue  `protobuf:"bytes,2,opt,name=output,proto3" json:"output,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EntityOperationCompletedEvent) Reset() {
+	*x = EntityOperationCompletedEvent{}
+	mi := &file_orchestrator_service_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EntityOperationCompletedEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EntityOperationCompletedEvent) ProtoMessage() {}
+
+func (x *EntityOperationCompletedEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EntityOperationCompletedEvent.ProtoReflect.Descriptor instead.
+func (*EntityOperationCompletedEvent) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *EntityOperationCompletedEvent) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *EntityOperationCompletedEvent) GetOutput() *wrappers.StringValue {
+	if x != nil {
+		return x.Output
+	}
+	return nil
+}
+
+type EntityOperationFailedEvent struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	RequestId      string                 `protobuf:"bytes,1,opt,name=requestId,proto3" json:"requestId,omitempty"`
+	FailureDetails *TaskFailureDetails    `protobuf:"bytes,2,opt,name=failureDetails,proto3" json:"failureDetails,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *EntityOperationFailedEvent) Reset() {
+	*x = EntityOperationFailedEvent{}
+	mi := &file_orchestrator_service_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EntityOperationFailedEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EntityOperationFailedEvent) ProtoMessage() {}
+
+func (x *EntityOperationFailedEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EntityOperationFailedEvent.ProtoReflect.Descriptor instead.
+func (*EntityOperationFailedEvent) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *EntityOperationFailedEvent) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *EntityOperationFailedEvent) GetFailureDetails() *TaskFailureDetails {
+	if x != nil {
+		return x.FailureDetails
+	}
+	return nil
+}
+
+type EntityUnlockSentEvent struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	CriticalSectionId string                 `protobuf:"bytes,1,opt,name=criticalSectionId,proto3" json:"criticalSectionId,omitempty"`
+	ParentInstanceId  *wrappers.StringValue  `protobuf:"bytes,2,opt,name=parentInstanceId,proto3" json:"parentInstanceId,omitempty"` // used only within messages, null in histories
+	TargetInstanceId  *wrappers.StringValue  `protobuf:"bytes,3,opt,name=targetInstanceId,proto3" json:"targetInstanceId,omitempty"` // used only within histories, null in messages
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *EntityUnlockSentEvent) Reset() {
+	*x = EntityUnlockSentEvent{}
+	mi := &file_orchestrator_service_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EntityUnlockSentEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EntityUnlockSentEvent) ProtoMessage() {}
+
+func (x *EntityUnlockSentEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EntityUnlockSentEvent.ProtoReflect.Descriptor instead.
+func (*EntityUnlockSentEvent) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *EntityUnlockSentEvent) GetCriticalSectionId() string {
+	if x != nil {
+		return x.CriticalSectionId
+	}
+	return ""
+}
+
+func (x *EntityUnlockSentEvent) GetParentInstanceId() *wrappers.StringValue {
+	if x != nil {
+		return x.ParentInstanceId
+	}
+	return nil
+}
+
+func (x *EntityUnlockSentEvent) GetTargetInstanceId() *wrappers.StringValue {
+	if x != nil {
+		return x.TargetInstanceId
+	}
+	return nil
+}
+
+type EntityLockGrantedEvent struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	CriticalSectionId string                 `protobuf:"bytes,1,opt,name=criticalSectionId,proto3" json:"criticalSectionId,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *EntityLockGrantedEvent) Reset() {
+	*x = EntityLockGrantedEvent{}
+	mi := &file_orchestrator_service_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EntityLockGrantedEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EntityLockGrantedEvent) ProtoMessage() {}
+
+func (x *EntityLockGrantedEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EntityLockGrantedEvent.ProtoReflect.Descriptor instead.
+func (*EntityLockGrantedEvent) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *EntityLockGrantedEvent) GetCriticalSectionId() string {
+	if x != nil {
+		return x.CriticalSectionId
+	}
+	return ""
+}
+
+type ExecutionRewoundEvent struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Reason             *wrappers.StringValue  `protobuf:"bytes,1,opt,name=reason,proto3" json:"reason,omitempty"`
+	ParentExecutionId  *wrappers.StringValue  `protobuf:"bytes,2,opt,name=parentExecutionId,proto3" json:"parentExecutionId,omitempty"`                                                 // used only for rewinding suborchestrations, null otherwise
+	InstanceId         *wrappers.StringValue  `protobuf:"bytes,3,opt,name=instanceId,proto3" json:"instanceId,omitempty"`                                                               // used only for rewinding suborchestrations, null otherwise
+	ParentTraceContext *TraceContext          `protobuf:"bytes,4,opt,name=parentTraceContext,proto3" json:"parentTraceContext,omitempty"`                                               // used only for rewinding suborchestrations, null otherwise
+	Name               *wrappers.StringValue  `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`                                                                           // used by DTS backend only
+	Version            *wrappers.StringValue  `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`                                                                     // used by DTS backend only
+	Input              *wrappers.StringValue  `protobuf:"bytes,7,opt,name=input,proto3" json:"input,omitempty"`                                                                         // used by DTS backend only
+	ParentInstance     *ParentInstanceInfo    `protobuf:"bytes,8,opt,name=parentInstance,proto3" json:"parentInstance,omitempty"`                                                       // used by DTS backend only
+	Tags               map[string]string      `protobuf:"bytes,9,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // used by DTS backend only
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *ExecutionRewoundEvent) Reset() {
+	*x = ExecutionRewoundEvent{}
+	mi := &file_orchestrator_service_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecutionRewoundEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecutionRewoundEvent) ProtoMessage() {}
+
+func (x *ExecutionRewoundEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecutionRewoundEvent.ProtoReflect.Descriptor instead.
+func (*ExecutionRewoundEvent) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *ExecutionRewoundEvent) GetReason() *wrappers.StringValue {
+	if x != nil {
+		return x.Reason
+	}
+	return nil
+}
+
+func (x *ExecutionRewoundEvent) GetParentExecutionId() *wrappers.StringValue {
+	if x != nil {
+		return x.ParentExecutionId
+	}
+	return nil
+}
+
+func (x *ExecutionRewoundEvent) GetInstanceId() *wrappers.StringValue {
+	if x != nil {
+		return x.InstanceId
+	}
+	return nil
+}
+
+func (x *ExecutionRewoundEvent) GetParentTraceContext() *TraceContext {
+	if x != nil {
+		return x.ParentTraceContext
+	}
+	return nil
+}
+
+func (x *ExecutionRewoundEvent) GetName() *wrappers.StringValue {
+	if x != nil {
+		return x.Name
+	}
+	return nil
+}
+
+func (x *ExecutionRewoundEvent) GetVersion() *wrappers.StringValue {
+	if x != nil {
+		return x.Version
+	}
+	return nil
+}
+
+func (x *ExecutionRewoundEvent) GetInput() *wrappers.StringValue {
+	if x != nil {
+		return x.Input
+	}
+	return nil
+}
+
+func (x *ExecutionRewoundEvent) GetParentInstance() *ParentInstanceInfo {
+	if x != nil {
+		return x.ParentInstance
+	}
+	return nil
+}
+
+func (x *ExecutionRewoundEvent) GetTags() map[string]string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
 type HistoryEvent struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	EventId   int32                  `protobuf:"varint,1,opt,name=eventId,proto3" json:"eventId,omitempty"`
@@ -1633,6 +2255,14 @@ type HistoryEvent struct {
 	//	*HistoryEvent_ContinueAsNew
 	//	*HistoryEvent_ExecutionSuspended
 	//	*HistoryEvent_ExecutionResumed
+	//	*HistoryEvent_EntityOperationSignaled
+	//	*HistoryEvent_EntityOperationCalled
+	//	*HistoryEvent_EntityOperationCompleted
+	//	*HistoryEvent_EntityOperationFailed
+	//	*HistoryEvent_EntityLockRequested
+	//	*HistoryEvent_EntityLockGranted
+	//	*HistoryEvent_EntityUnlockSent
+	//	*HistoryEvent_ExecutionRewound
 	EventType     isHistoryEvent_EventType `protobuf_oneof:"eventType"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1640,7 +2270,7 @@ type HistoryEvent struct {
 
 func (x *HistoryEvent) Reset() {
 	*x = HistoryEvent{}
-	mi := &file_orchestrator_service_proto_msgTypes[26]
+	mi := &file_orchestrator_service_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1652,7 +2282,7 @@ func (x *HistoryEvent) String() string {
 func (*HistoryEvent) ProtoMessage() {}
 
 func (x *HistoryEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[26]
+	mi := &file_orchestrator_service_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1665,7 +2295,7 @@ func (x *HistoryEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HistoryEvent.ProtoReflect.Descriptor instead.
 func (*HistoryEvent) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{26}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *HistoryEvent) GetEventId() int32 {
@@ -1869,6 +2499,78 @@ func (x *HistoryEvent) GetExecutionResumed() *ExecutionResumedEvent {
 	return nil
 }
 
+func (x *HistoryEvent) GetEntityOperationSignaled() *EntityOperationSignaledEvent {
+	if x != nil {
+		if x, ok := x.EventType.(*HistoryEvent_EntityOperationSignaled); ok {
+			return x.EntityOperationSignaled
+		}
+	}
+	return nil
+}
+
+func (x *HistoryEvent) GetEntityOperationCalled() *EntityOperationCalledEvent {
+	if x != nil {
+		if x, ok := x.EventType.(*HistoryEvent_EntityOperationCalled); ok {
+			return x.EntityOperationCalled
+		}
+	}
+	return nil
+}
+
+func (x *HistoryEvent) GetEntityOperationCompleted() *EntityOperationCompletedEvent {
+	if x != nil {
+		if x, ok := x.EventType.(*HistoryEvent_EntityOperationCompleted); ok {
+			return x.EntityOperationCompleted
+		}
+	}
+	return nil
+}
+
+func (x *HistoryEvent) GetEntityOperationFailed() *EntityOperationFailedEvent {
+	if x != nil {
+		if x, ok := x.EventType.(*HistoryEvent_EntityOperationFailed); ok {
+			return x.EntityOperationFailed
+		}
+	}
+	return nil
+}
+
+func (x *HistoryEvent) GetEntityLockRequested() *EntityLockRequestedEvent {
+	if x != nil {
+		if x, ok := x.EventType.(*HistoryEvent_EntityLockRequested); ok {
+			return x.EntityLockRequested
+		}
+	}
+	return nil
+}
+
+func (x *HistoryEvent) GetEntityLockGranted() *EntityLockGrantedEvent {
+	if x != nil {
+		if x, ok := x.EventType.(*HistoryEvent_EntityLockGranted); ok {
+			return x.EntityLockGranted
+		}
+	}
+	return nil
+}
+
+func (x *HistoryEvent) GetEntityUnlockSent() *EntityUnlockSentEvent {
+	if x != nil {
+		if x, ok := x.EventType.(*HistoryEvent_EntityUnlockSent); ok {
+			return x.EntityUnlockSent
+		}
+	}
+	return nil
+}
+
+func (x *HistoryEvent) GetExecutionRewound() *ExecutionRewoundEvent {
+	if x != nil {
+		if x, ok := x.EventType.(*HistoryEvent_ExecutionRewound); ok {
+			return x.ExecutionRewound
+		}
+	}
+	return nil
+}
+
 type isHistoryEvent_EventType interface {
 	isHistoryEvent_EventType()
 }
@@ -1953,6 +2655,38 @@ type HistoryEvent_ExecutionResumed struct {
 	ExecutionResumed *ExecutionResumedEvent `protobuf:"bytes,22,opt,name=executionResumed,proto3,oneof"`
 }
 
+type HistoryEvent_EntityOperationSignaled struct {
+	EntityOperationSignaled *EntityOperationSignaledEvent `protobuf:"bytes,23,opt,name=entityOperationSignaled,proto3,oneof"`
+}
+
+type HistoryEvent_EntityOperationCalled struct {
+	EntityOperationCalled *EntityOperationCalledEvent `protobuf:"bytes,24,opt,name=entityOperationCalled,proto3,oneof"`
+}
+
+type HistoryEvent_EntityOperationCompleted struct {
+	EntityOperationCompleted *EntityOperationCompletedEvent `protobuf:"bytes,25,opt,name=entityOperationCompleted,proto3,oneof"`
+}
+
+type HistoryEvent_EntityOperationFailed struct {
+	EntityOperationFailed *EntityOperationFailedEvent `protobuf:"bytes,26,opt,name=entityOperationFailed,proto3,oneof"`
+}
+
+type HistoryEvent_EntityLockRequested struct {
+	EntityLockRequested *EntityLockRequestedEvent `protobuf:"bytes,27,opt,name=entityLockRequested,proto3,oneof"`
+}
+
+type HistoryEvent_EntityLockGranted struct {
+	EntityLockGranted *EntityLockGrantedEvent `protobuf:"bytes,28,opt,name=entityLockGranted,proto3,oneof"`
+}
+
+type HistoryEvent_EntityUnlockSent struct {
+	EntityUnlockSent *EntityUnlockSentEvent `protobuf:"bytes,29,opt,name=entityUnlockSent,proto3,oneof"`
+}
+
+type HistoryEvent_ExecutionRewound struct {
+	ExecutionRewound *ExecutionRewoundEvent `protobuf:"bytes,30,opt,name=executionRewound,proto3,oneof"`
+}
+
 func (*HistoryEvent_ExecutionStarted) isHistoryEvent_EventType() {}
 
 func (*HistoryEvent_ExecutionCompleted) isHistoryEvent_EventType() {}
@@ -1993,18 +2727,36 @@ func (*HistoryEvent_ExecutionSuspended) isHistoryEvent_EventType() {}
 
 func (*HistoryEvent_ExecutionResumed) isHistoryEvent_EventType() {}
 
+func (*HistoryEvent_EntityOperationSignaled) isHistoryEvent_EventType() {}
+
+func (*HistoryEvent_EntityOperationCalled) isHistoryEvent_EventType() {}
+
+func (*HistoryEvent_EntityOperationCompleted) isHistoryEvent_EventType() {}
+
+func (*HistoryEvent_EntityOperationFailed) isHistoryEvent_EventType() {}
+
+func (*HistoryEvent_EntityLockRequested) isHistoryEvent_EventType() {}
+
+func (*HistoryEvent_EntityLockGranted) isHistoryEvent_EventType() {}
+
+func (*HistoryEvent_EntityUnlockSent) isHistoryEvent_EventType() {}
+
+func (*HistoryEvent_ExecutionRewound) isHistoryEvent_EventType() {}
+
 type ScheduleTaskAction struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Version       *wrappers.StringValue  `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
-	Input         *wrappers.StringValue  `protobuf:"bytes,3,opt,name=input,proto3" json:"input,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Name               string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Version            *wrappers.StringValue  `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	Input              *wrappers.StringValue  `protobuf:"bytes,3,opt,name=input,proto3" json:"input,omitempty"`
+	Tags               map[string]string      `protobuf:"bytes,4,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	ParentTraceContext *TraceContext          `protobuf:"bytes,5,opt,name=parentTraceContext,proto3" json:"parentTraceContext,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *ScheduleTaskAction) Reset() {
 	*x = ScheduleTaskAction{}
-	mi := &file_orchestrator_service_proto_msgTypes[27]
+	mi := &file_orchestrator_service_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2016,7 +2768,7 @@ func (x *ScheduleTaskAction) String() string {
 func (*ScheduleTaskAction) ProtoMessage() {}
 
 func (x *ScheduleTaskAction) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[27]
+	mi := &file_orchestrator_service_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2029,7 +2781,7 @@ func (x *ScheduleTaskAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScheduleTaskAction.ProtoReflect.Descriptor instead.
 func (*ScheduleTaskAction) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{27}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *ScheduleTaskAction) GetName() string {
@@ -2053,19 +2805,35 @@ func (x *ScheduleTaskAction) GetInput() *wrappers.StringValue {
 	return nil
 }
 
+func (x *ScheduleTaskAction) GetTags() map[string]string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+func (x *ScheduleTaskAction) GetParentTraceContext() *TraceContext {
+	if x != nil {
+		return x.ParentTraceContext
+	}
+	return nil
+}
+
 type CreateSubOrchestrationAction struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	InstanceId    string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Version       *wrappers.StringValue  `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
-	Input         *wrappers.StringValue  `protobuf:"bytes,4,opt,name=input,proto3" json:"input,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	InstanceId         string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
+	Name               string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Version            *wrappers.StringValue  `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
+	Input              *wrappers.StringValue  `protobuf:"bytes,4,opt,name=input,proto3" json:"input,omitempty"`
+	ParentTraceContext *TraceContext          `protobuf:"bytes,5,opt,name=parentTraceContext,proto3" json:"parentTraceContext,omitempty"`
+	Tags               map[string]string      `protobuf:"bytes,6,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *CreateSubOrchestrationAction) Reset() {
 	*x = CreateSubOrchestrationAction{}
-	mi := &file_orchestrator_service_proto_msgTypes[28]
+	mi := &file_orchestrator_service_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2077,7 +2845,7 @@ func (x *CreateSubOrchestrationAction) String() string {
 func (*CreateSubOrchestrationAction) ProtoMessage() {}
 
 func (x *CreateSubOrchestrationAction) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[28]
+	mi := &file_orchestrator_service_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2090,7 +2858,7 @@ func (x *CreateSubOrchestrationAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateSubOrchestrationAction.ProtoReflect.Descriptor instead.
 func (*CreateSubOrchestrationAction) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{28}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *CreateSubOrchestrationAction) GetInstanceId() string {
@@ -2121,6 +2889,20 @@ func (x *CreateSubOrchestrationAction) GetInput() *wrappers.StringValue {
 	return nil
 }
 
+func (x *CreateSubOrchestrationAction) GetParentTraceContext() *TraceContext {
+	if x != nil {
+		return x.ParentTraceContext
+	}
+	return nil
+}
+
+func (x *CreateSubOrchestrationAction) GetTags() map[string]string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
 type CreateTimerAction struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	FireAt        *timestamp.Timestamp   `protobuf:"bytes,1,opt,name=fireAt,proto3" json:"fireAt,omitempty"`
@@ -2130,7 +2912,7 @@ type CreateTimerAction struct {
 
 func (x *CreateTimerAction) Reset() {
 	*x = CreateTimerAction{}
-	mi := &file_orchestrator_service_proto_msgTypes[29]
+	mi := &file_orchestrator_service_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2142,7 +2924,7 @@ func (x *CreateTimerAction) String() string {
 func (*CreateTimerAction) ProtoMessage() {}
 
 func (x *CreateTimerAction) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[29]
+	mi := &file_orchestrator_service_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2155,7 +2937,7 @@ func (x *CreateTimerAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTimerAction.ProtoReflect.Descriptor instead.
 func (*CreateTimerAction) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{29}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *CreateTimerAction) GetFireAt() *timestamp.Timestamp {
@@ -2176,7 +2958,7 @@ type SendEventAction struct {
 
 func (x *SendEventAction) Reset() {
 	*x = SendEventAction{}
-	mi := &file_orchestrator_service_proto_msgTypes[30]
+	mi := &file_orchestrator_service_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2188,7 +2970,7 @@ func (x *SendEventAction) String() string {
 func (*SendEventAction) ProtoMessage() {}
 
 func (x *SendEventAction) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[30]
+	mi := &file_orchestrator_service_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2201,7 +2983,7 @@ func (x *SendEventAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendEventAction.ProtoReflect.Descriptor instead.
 func (*SendEventAction) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{30}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *SendEventAction) GetInstance() *OrchestrationInstance {
@@ -2233,13 +3015,14 @@ type CompleteOrchestrationAction struct {
 	NewVersion          *wrappers.StringValue  `protobuf:"bytes,4,opt,name=newVersion,proto3" json:"newVersion,omitempty"`
 	CarryoverEvents     []*HistoryEvent        `protobuf:"bytes,5,rep,name=carryoverEvents,proto3" json:"carryoverEvents,omitempty"`
 	FailureDetails      *TaskFailureDetails    `protobuf:"bytes,6,opt,name=failureDetails,proto3" json:"failureDetails,omitempty"`
+	Tags                map[string]string      `protobuf:"bytes,7,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
 
 func (x *CompleteOrchestrationAction) Reset() {
 	*x = CompleteOrchestrationAction{}
-	mi := &file_orchestrator_service_proto_msgTypes[31]
+	mi := &file_orchestrator_service_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2251,7 +3034,7 @@ func (x *CompleteOrchestrationAction) String() string {
 func (*CompleteOrchestrationAction) ProtoMessage() {}
 
 func (x *CompleteOrchestrationAction) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[31]
+	mi := &file_orchestrator_service_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2264,7 +3047,7 @@ func (x *CompleteOrchestrationAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompleteOrchestrationAction.ProtoReflect.Descriptor instead.
 func (*CompleteOrchestrationAction) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{31}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *CompleteOrchestrationAction) GetOrchestrationStatus() OrchestrationStatus {
@@ -2309,6 +3092,13 @@ func (x *CompleteOrchestrationAction) GetFailureDetails() *TaskFailureDetails {
 	return nil
 }
 
+func (x *CompleteOrchestrationAction) GetTags() map[string]string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
 type TerminateOrchestrationAction struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	InstanceId    string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
@@ -2320,7 +3110,7 @@ type TerminateOrchestrationAction struct {
 
 func (x *TerminateOrchestrationAction) Reset() {
 	*x = TerminateOrchestrationAction{}
-	mi := &file_orchestrator_service_proto_msgTypes[32]
+	mi := &file_orchestrator_service_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2332,7 +3122,7 @@ func (x *TerminateOrchestrationAction) String() string {
 func (*TerminateOrchestrationAction) ProtoMessage() {}
 
 func (x *TerminateOrchestrationAction) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[32]
+	mi := &file_orchestrator_service_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2345,7 +3135,7 @@ func (x *TerminateOrchestrationAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminateOrchestrationAction.ProtoReflect.Descriptor instead.
 func (*TerminateOrchestrationAction) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{32}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *TerminateOrchestrationAction) GetInstanceId() string {
@@ -2369,6 +3159,165 @@ func (x *TerminateOrchestrationAction) GetRecurse() bool {
 	return false
 }
 
+type SendEntityMessageAction struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to EntityMessageType:
+	//
+	//	*SendEntityMessageAction_EntityOperationSignaled
+	//	*SendEntityMessageAction_EntityOperationCalled
+	//	*SendEntityMessageAction_EntityLockRequested
+	//	*SendEntityMessageAction_EntityUnlockSent
+	EntityMessageType isSendEntityMessageAction_EntityMessageType `protobuf_oneof:"EntityMessageType"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *SendEntityMessageAction) Reset() {
+	*x = SendEntityMessageAction{}
+	mi := &file_orchestrator_service_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendEntityMessageAction) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendEntityMessageAction) ProtoMessage() {}
+
+func (x *SendEntityMessageAction) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendEntityMessageAction.ProtoReflect.Descriptor instead.
+func (*SendEntityMessageAction) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *SendEntityMessageAction) GetEntityMessageType() isSendEntityMessageAction_EntityMessageType {
+	if x != nil {
+		return x.EntityMessageType
+	}
+	return nil
+}
+
+func (x *SendEntityMessageAction) GetEntityOperationSignaled() *EntityOperationSignaledEvent {
+	if x != nil {
+		if x, ok := x.EntityMessageType.(*SendEntityMessageAction_EntityOperationSignaled); ok {
+			return x.EntityOperationSignaled
+		}
+	}
+	return nil
+}
+
+func (x *SendEntityMessageAction) GetEntityOperationCalled() *EntityOperationCalledEvent {
+	if x != nil {
+		if x, ok := x.EntityMessageType.(*SendEntityMessageAction_EntityOperationCalled); ok {
+			return x.EntityOperationCalled
+		}
+	}
+	return nil
+}
+
+func (x *SendEntityMessageAction) GetEntityLockRequested() *EntityLockRequestedEvent {
+	if x != nil {
+		if x, ok := x.EntityMessageType.(*SendEntityMessageAction_EntityLockRequested); ok {
+			return x.EntityLockRequested
+		}
+	}
+	return nil
+}
+
+func (x *SendEntityMessageAction) GetEntityUnlockSent() *EntityUnlockSentEvent {
+	if x != nil {
+		if x, ok := x.EntityMessageType.(*SendEntityMessageAction_EntityUnlockSent); ok {
+			return x.EntityUnlockSent
+		}
+	}
+	return nil
+}
+
+type isSendEntityMessageAction_EntityMessageType interface {
+	isSendEntityMessageAction_EntityMessageType()
+}
+
+type SendEntityMessageAction_EntityOperationSignaled struct {
+	EntityOperationSignaled *EntityOperationSignaledEvent `protobuf:"bytes,1,opt,name=entityOperationSignaled,proto3,oneof"`
+}
+
+type SendEntityMessageAction_EntityOperationCalled struct {
+	EntityOperationCalled *EntityOperationCalledEvent `protobuf:"bytes,2,opt,name=entityOperationCalled,proto3,oneof"`
+}
+
+type SendEntityMessageAction_EntityLockRequested struct {
+	EntityLockRequested *EntityLockRequestedEvent `protobuf:"bytes,3,opt,name=entityLockRequested,proto3,oneof"`
+}
+
+type SendEntityMessageAction_EntityUnlockSent struct {
+	EntityUnlockSent *EntityUnlockSentEvent `protobuf:"bytes,4,opt,name=entityUnlockSent,proto3,oneof"`
+}
+
+func (*SendEntityMessageAction_EntityOperationSignaled) isSendEntityMessageAction_EntityMessageType() {
+}
+
+func (*SendEntityMessageAction_EntityOperationCalled) isSendEntityMessageAction_EntityMessageType() {}
+
+func (*SendEntityMessageAction_EntityLockRequested) isSendEntityMessageAction_EntityMessageType() {}
+
+func (*SendEntityMessageAction_EntityUnlockSent) isSendEntityMessageAction_EntityMessageType() {}
+
+type RewindOrchestrationAction struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	NewHistory    []*HistoryEvent        `protobuf:"bytes,1,rep,name=newHistory,proto3" json:"newHistory,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RewindOrchestrationAction) Reset() {
+	*x = RewindOrchestrationAction{}
+	mi := &file_orchestrator_service_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RewindOrchestrationAction) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RewindOrchestrationAction) ProtoMessage() {}
+
+func (x *RewindOrchestrationAction) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RewindOrchestrationAction.ProtoReflect.Descriptor instead.
+func (*RewindOrchestrationAction) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *RewindOrchestrationAction) GetNewHistory() []*HistoryEvent {
+	if x != nil {
+		return x.NewHistory
+	}
+	return nil
+}
+
 type OrchestratorAction struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Id    int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -2380,6 +3329,8 @@ type OrchestratorAction struct {
 	//	*OrchestratorAction_SendEvent
 	//	*OrchestratorAction_CompleteOrchestration
 	//	*OrchestratorAction_TerminateOrchestration
+	//	*OrchestratorAction_SendEntityMessage
+	//	*OrchestratorAction_RewindOrchestration
 	OrchestratorActionType isOrchestratorAction_OrchestratorActionType `protobuf_oneof:"orchestratorActionType"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -2387,7 +3338,7 @@ type OrchestratorAction struct {
 
 func (x *OrchestratorAction) Reset() {
 	*x = OrchestratorAction{}
-	mi := &file_orchestrator_service_proto_msgTypes[33]
+	mi := &file_orchestrator_service_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2399,7 +3350,7 @@ func (x *OrchestratorAction) String() string {
 func (*OrchestratorAction) ProtoMessage() {}
 
 func (x *OrchestratorAction) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[33]
+	mi := &file_orchestrator_service_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2412,7 +3363,7 @@ func (x *OrchestratorAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OrchestratorAction.ProtoReflect.Descriptor instead.
 func (*OrchestratorAction) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{33}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *OrchestratorAction) GetId() int32 {
@@ -2483,6 +3434,24 @@ func (x *OrchestratorAction) GetTerminateOrchestration() *TerminateOrchestration
 	return nil
 }
 
+func (x *OrchestratorAction) GetSendEntityMessage() *SendEntityMessageAction {
+	if x != nil {
+		if x, ok := x.OrchestratorActionType.(*OrchestratorAction_SendEntityMessage); ok {
+			return x.SendEntityMessage
+		}
+	}
+	return nil
+}
+
+func (x *OrchestratorAction) GetRewindOrchestration() *RewindOrchestrationAction {
+	if x != nil {
+		if x, ok := x.OrchestratorActionType.(*OrchestratorAction_RewindOrchestration); ok {
+			return x.RewindOrchestration
+		}
+	}
+	return nil
+}
+
 type isOrchestratorAction_OrchestratorActionType interface {
 	isOrchestratorAction_OrchestratorActionType()
 }
@@ -2511,6 +3480,14 @@ type OrchestratorAction_TerminateOrchestration struct {
 	TerminateOrchestration *TerminateOrchestrationAction `protobuf:"bytes,7,opt,name=terminateOrchestration,proto3,oneof"`
 }
 
+type OrchestratorAction_SendEntityMessage struct {
+	SendEntityMessage *SendEntityMessageAction `protobuf:"bytes,8,opt,name=sendEntityMessage,proto3,oneof"`
+}
+
+type OrchestratorAction_RewindOrchestration struct {
+	RewindOrchestration *RewindOrchestrationAction `protobuf:"bytes,9,opt,name=rewindOrchestration,proto3,oneof"`
+}
+
 func (*OrchestratorAction_ScheduleTask) isOrchestratorAction_OrchestratorActionType() {}
 
 func (*OrchestratorAction_CreateSubOrchestration) isOrchestratorAction_OrchestratorActionType() {}
@@ -2523,20 +3500,79 @@ func (*OrchestratorAction_CompleteOrchestration) isOrchestratorAction_Orchestrat
 
 func (*OrchestratorAction_TerminateOrchestration) isOrchestratorAction_OrchestratorActionType() {}
 
+func (*OrchestratorAction_SendEntityMessage) isOrchestratorAction_OrchestratorActionType() {}
+
+func (*OrchestratorAction_RewindOrchestration) isOrchestratorAction_OrchestratorActionType() {}
+
+type OrchestrationTraceContext struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SpanID        *wrappers.StringValue  `protobuf:"bytes,1,opt,name=spanID,proto3" json:"spanID,omitempty"`
+	SpanStartTime *timestamp.Timestamp   `protobuf:"bytes,2,opt,name=spanStartTime,proto3" json:"spanStartTime,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OrchestrationTraceContext) Reset() {
+	*x = OrchestrationTraceContext{}
+	mi := &file_orchestrator_service_proto_msgTypes[44]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OrchestrationTraceContext) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OrchestrationTraceContext) ProtoMessage() {}
+
+func (x *OrchestrationTraceContext) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[44]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OrchestrationTraceContext.ProtoReflect.Descriptor instead.
+func (*OrchestrationTraceContext) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{44}
+}
+
+func (x *OrchestrationTraceContext) GetSpanID() *wrappers.StringValue {
+	if x != nil {
+		return x.SpanID
+	}
+	return nil
+}
+
+func (x *OrchestrationTraceContext) GetSpanStartTime() *timestamp.Timestamp {
+	if x != nil {
+		return x.SpanStartTime
+	}
+	return nil
+}
+
 type OrchestratorRequest struct {
-	state            protoimpl.MessageState        `protogen:"open.v1"`
-	InstanceId       string                        `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
-	ExecutionId      *wrappers.StringValue         `protobuf:"bytes,2,opt,name=executionId,proto3" json:"executionId,omitempty"`
-	PastEvents       []*HistoryEvent               `protobuf:"bytes,3,rep,name=pastEvents,proto3" json:"pastEvents,omitempty"`
-	NewEvents        []*HistoryEvent               `protobuf:"bytes,4,rep,name=newEvents,proto3" json:"newEvents,omitempty"`
-	EntityParameters *OrchestratorEntityParameters `protobuf:"bytes,5,opt,name=entityParameters,proto3" json:"entityParameters,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	state                     protoimpl.MessageState        `protogen:"open.v1"`
+	InstanceId                string                        `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
+	ExecutionId               *wrappers.StringValue         `protobuf:"bytes,2,opt,name=executionId,proto3" json:"executionId,omitempty"`
+	PastEvents                []*HistoryEvent               `protobuf:"bytes,3,rep,name=pastEvents,proto3" json:"pastEvents,omitempty"`
+	NewEvents                 []*HistoryEvent               `protobuf:"bytes,4,rep,name=newEvents,proto3" json:"newEvents,omitempty"`
+	EntityParameters          *OrchestratorEntityParameters `protobuf:"bytes,5,opt,name=entityParameters,proto3" json:"entityParameters,omitempty"`
+	RequiresHistoryStreaming  bool                          `protobuf:"varint,6,opt,name=requiresHistoryStreaming,proto3" json:"requiresHistoryStreaming,omitempty"`
+	Properties                map[string]*_struct.Value     `protobuf:"bytes,7,rep,name=properties,proto3" json:"properties,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	OrchestrationTraceContext *OrchestrationTraceContext    `protobuf:"bytes,8,opt,name=orchestrationTraceContext,proto3" json:"orchestrationTraceContext,omitempty"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
 }
 
 func (x *OrchestratorRequest) Reset() {
 	*x = OrchestratorRequest{}
-	mi := &file_orchestrator_service_proto_msgTypes[34]
+	mi := &file_orchestrator_service_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2548,7 +3584,7 @@ func (x *OrchestratorRequest) String() string {
 func (*OrchestratorRequest) ProtoMessage() {}
 
 func (x *OrchestratorRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[34]
+	mi := &file_orchestrator_service_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2561,7 +3597,7 @@ func (x *OrchestratorRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OrchestratorRequest.ProtoReflect.Descriptor instead.
 func (*OrchestratorRequest) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{34}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *OrchestratorRequest) GetInstanceId() string {
@@ -2599,18 +3635,55 @@ func (x *OrchestratorRequest) GetEntityParameters() *OrchestratorEntityParameter
 	return nil
 }
 
+func (x *OrchestratorRequest) GetRequiresHistoryStreaming() bool {
+	if x != nil {
+		return x.RequiresHistoryStreaming
+	}
+	return false
+}
+
+func (x *OrchestratorRequest) GetProperties() map[string]*_struct.Value {
+	if x != nil {
+		return x.Properties
+	}
+	return nil
+}
+
+func (x *OrchestratorRequest) GetOrchestrationTraceContext() *OrchestrationTraceContext {
+	if x != nil {
+		return x.OrchestrationTraceContext
+	}
+	return nil
+}
+
 type OrchestratorResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	InstanceId    string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
-	Actions       []*OrchestratorAction  `protobuf:"bytes,2,rep,name=actions,proto3" json:"actions,omitempty"`
-	CustomStatus  *wrappers.StringValue  `protobuf:"bytes,3,opt,name=customStatus,proto3" json:"customStatus,omitempty"`
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	InstanceId      string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
+	Actions         []*OrchestratorAction  `protobuf:"bytes,2,rep,name=actions,proto3" json:"actions,omitempty"`
+	CustomStatus    *wrappers.StringValue  `protobuf:"bytes,3,opt,name=customStatus,proto3" json:"customStatus,omitempty"`
+	CompletionToken string                 `protobuf:"bytes,4,opt,name=completionToken,proto3" json:"completionToken,omitempty"`
+	// The number of work item events that were processed by the orchestrator.
+	// This field is optional. If not set, the service should assume that the orchestrator processed all events.
+	NumEventsProcessed        *wrappers.Int32Value       `protobuf:"bytes,5,opt,name=numEventsProcessed,proto3" json:"numEventsProcessed,omitempty"`
+	OrchestrationTraceContext *OrchestrationTraceContext `protobuf:"bytes,6,opt,name=orchestrationTraceContext,proto3" json:"orchestrationTraceContext,omitempty"`
+	// Whether or not a history is required to complete the original OrchestratorRequest and none was provided.
+	RequiresHistory bool `protobuf:"varint,7,opt,name=requiresHistory,proto3" json:"requiresHistory,omitempty"`
+	// True if this is a partial (chunked) completion. The backend must keep the work item open until the final chunk (isPartial=false).
+	//
+	// Deprecated: Marked as deprecated in orchestrator_service.proto.
+	IsPartial bool `protobuf:"varint,8,opt,name=isPartial,proto3" json:"isPartial,omitempty"`
+	// Zero-based position of the current chunk within a chunked completion sequence.
+	// This field is omitted for non-chunked completions.
+	//
+	// Deprecated: Marked as deprecated in orchestrator_service.proto.
+	ChunkIndex    *wrappers.Int32Value `protobuf:"bytes,9,opt,name=chunkIndex,proto3" json:"chunkIndex,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OrchestratorResponse) Reset() {
 	*x = OrchestratorResponse{}
-	mi := &file_orchestrator_service_proto_msgTypes[35]
+	mi := &file_orchestrator_service_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2622,7 +3695,7 @@ func (x *OrchestratorResponse) String() string {
 func (*OrchestratorResponse) ProtoMessage() {}
 
 func (x *OrchestratorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[35]
+	mi := &file_orchestrator_service_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2635,7 +3708,7 @@ func (x *OrchestratorResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OrchestratorResponse.ProtoReflect.Descriptor instead.
 func (*OrchestratorResponse) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{35}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *OrchestratorResponse) GetInstanceId() string {
@@ -2659,6 +3732,50 @@ func (x *OrchestratorResponse) GetCustomStatus() *wrappers.StringValue {
 	return nil
 }
 
+func (x *OrchestratorResponse) GetCompletionToken() string {
+	if x != nil {
+		return x.CompletionToken
+	}
+	return ""
+}
+
+func (x *OrchestratorResponse) GetNumEventsProcessed() *wrappers.Int32Value {
+	if x != nil {
+		return x.NumEventsProcessed
+	}
+	return nil
+}
+
+func (x *OrchestratorResponse) GetOrchestrationTraceContext() *OrchestrationTraceContext {
+	if x != nil {
+		return x.OrchestrationTraceContext
+	}
+	return nil
+}
+
+func (x *OrchestratorResponse) GetRequiresHistory() bool {
+	if x != nil {
+		return x.RequiresHistory
+	}
+	return false
+}
+
+// Deprecated: Marked as deprecated in orchestrator_service.proto.
+func (x *OrchestratorResponse) GetIsPartial() bool {
+	if x != nil {
+		return x.IsPartial
+	}
+	return false
+}
+
+// Deprecated: Marked as deprecated in orchestrator_service.proto.
+func (x *OrchestratorResponse) GetChunkIndex() *wrappers.Int32Value {
+	if x != nil {
+		return x.ChunkIndex
+	}
+	return nil
+}
+
 type CreateInstanceRequest struct {
 	state                      protoimpl.MessageState      `protogen:"open.v1"`
 	InstanceId                 string                      `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
@@ -2667,13 +3784,17 @@ type CreateInstanceRequest struct {
 	Input                      *wrappers.StringValue       `protobuf:"bytes,4,opt,name=input,proto3" json:"input,omitempty"`
 	ScheduledStartTimestamp    *timestamp.Timestamp        `protobuf:"bytes,5,opt,name=scheduledStartTimestamp,proto3" json:"scheduledStartTimestamp,omitempty"`
 	OrchestrationIdReusePolicy *OrchestrationIdReusePolicy `protobuf:"bytes,6,opt,name=orchestrationIdReusePolicy,proto3" json:"orchestrationIdReusePolicy,omitempty"`
+	ExecutionId                *wrappers.StringValue       `protobuf:"bytes,7,opt,name=executionId,proto3" json:"executionId,omitempty"`
+	Tags                       map[string]string           `protobuf:"bytes,8,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	ParentTraceContext         *TraceContext               `protobuf:"bytes,9,opt,name=parentTraceContext,proto3" json:"parentTraceContext,omitempty"`
+	RequestTime                *timestamp.Timestamp        `protobuf:"bytes,10,opt,name=requestTime,proto3" json:"requestTime,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
 
 func (x *CreateInstanceRequest) Reset() {
 	*x = CreateInstanceRequest{}
-	mi := &file_orchestrator_service_proto_msgTypes[36]
+	mi := &file_orchestrator_service_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2685,7 +3806,7 @@ func (x *CreateInstanceRequest) String() string {
 func (*CreateInstanceRequest) ProtoMessage() {}
 
 func (x *CreateInstanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[36]
+	mi := &file_orchestrator_service_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2698,7 +3819,7 @@ func (x *CreateInstanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateInstanceRequest.ProtoReflect.Descriptor instead.
 func (*CreateInstanceRequest) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{36}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *CreateInstanceRequest) GetInstanceId() string {
@@ -2743,17 +3864,44 @@ func (x *CreateInstanceRequest) GetOrchestrationIdReusePolicy() *OrchestrationId
 	return nil
 }
 
+func (x *CreateInstanceRequest) GetExecutionId() *wrappers.StringValue {
+	if x != nil {
+		return x.ExecutionId
+	}
+	return nil
+}
+
+func (x *CreateInstanceRequest) GetTags() map[string]string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+func (x *CreateInstanceRequest) GetParentTraceContext() *TraceContext {
+	if x != nil {
+		return x.ParentTraceContext
+	}
+	return nil
+}
+
+func (x *CreateInstanceRequest) GetRequestTime() *timestamp.Timestamp {
+	if x != nil {
+		return x.RequestTime
+	}
+	return nil
+}
+
 type OrchestrationIdReusePolicy struct {
-	state           protoimpl.MessageState    `protogen:"open.v1"`
-	OperationStatus []OrchestrationStatus     `protobuf:"varint,1,rep,packed,name=operationStatus,proto3,enum=OrchestrationStatus" json:"operationStatus,omitempty"`
-	Action          CreateOrchestrationAction `protobuf:"varint,2,opt,name=action,proto3,enum=CreateOrchestrationAction" json:"action,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	ReplaceableStatus []OrchestrationStatus  `protobuf:"varint,1,rep,packed,name=replaceableStatus,proto3,enum=OrchestrationStatus" json:"replaceableStatus,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *OrchestrationIdReusePolicy) Reset() {
 	*x = OrchestrationIdReusePolicy{}
-	mi := &file_orchestrator_service_proto_msgTypes[37]
+	mi := &file_orchestrator_service_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2765,7 +3913,7 @@ func (x *OrchestrationIdReusePolicy) String() string {
 func (*OrchestrationIdReusePolicy) ProtoMessage() {}
 
 func (x *OrchestrationIdReusePolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[37]
+	mi := &file_orchestrator_service_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2778,21 +3926,14 @@ func (x *OrchestrationIdReusePolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OrchestrationIdReusePolicy.ProtoReflect.Descriptor instead.
 func (*OrchestrationIdReusePolicy) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{37}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{48}
 }
 
-func (x *OrchestrationIdReusePolicy) GetOperationStatus() []OrchestrationStatus {
+func (x *OrchestrationIdReusePolicy) GetReplaceableStatus() []OrchestrationStatus {
 	if x != nil {
-		return x.OperationStatus
+		return x.ReplaceableStatus
 	}
 	return nil
-}
-
-func (x *OrchestrationIdReusePolicy) GetAction() CreateOrchestrationAction {
-	if x != nil {
-		return x.Action
-	}
-	return CreateOrchestrationAction_ERROR
 }
 
 type CreateInstanceResponse struct {
@@ -2804,7 +3945,7 @@ type CreateInstanceResponse struct {
 
 func (x *CreateInstanceResponse) Reset() {
 	*x = CreateInstanceResponse{}
-	mi := &file_orchestrator_service_proto_msgTypes[38]
+	mi := &file_orchestrator_service_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2816,7 +3957,7 @@ func (x *CreateInstanceResponse) String() string {
 func (*CreateInstanceResponse) ProtoMessage() {}
 
 func (x *CreateInstanceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[38]
+	mi := &file_orchestrator_service_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2829,7 +3970,7 @@ func (x *CreateInstanceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateInstanceResponse.ProtoReflect.Descriptor instead.
 func (*CreateInstanceResponse) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{38}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *CreateInstanceResponse) GetInstanceId() string {
@@ -2849,7 +3990,7 @@ type GetInstanceRequest struct {
 
 func (x *GetInstanceRequest) Reset() {
 	*x = GetInstanceRequest{}
-	mi := &file_orchestrator_service_proto_msgTypes[39]
+	mi := &file_orchestrator_service_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2861,7 +4002,7 @@ func (x *GetInstanceRequest) String() string {
 func (*GetInstanceRequest) ProtoMessage() {}
 
 func (x *GetInstanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[39]
+	mi := &file_orchestrator_service_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2874,7 +4015,7 @@ func (x *GetInstanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetInstanceRequest.ProtoReflect.Descriptor instead.
 func (*GetInstanceRequest) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{39}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *GetInstanceRequest) GetInstanceId() string {
@@ -2901,7 +4042,7 @@ type GetInstanceResponse struct {
 
 func (x *GetInstanceResponse) Reset() {
 	*x = GetInstanceResponse{}
-	mi := &file_orchestrator_service_proto_msgTypes[40]
+	mi := &file_orchestrator_service_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2913,7 +4054,7 @@ func (x *GetInstanceResponse) String() string {
 func (*GetInstanceResponse) ProtoMessage() {}
 
 func (x *GetInstanceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[40]
+	mi := &file_orchestrator_service_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2926,7 +4067,7 @@ func (x *GetInstanceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetInstanceResponse.ProtoReflect.Descriptor instead.
 func (*GetInstanceResponse) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{40}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *GetInstanceResponse) GetExists() bool {
@@ -2953,7 +4094,7 @@ type RewindInstanceRequest struct {
 
 func (x *RewindInstanceRequest) Reset() {
 	*x = RewindInstanceRequest{}
-	mi := &file_orchestrator_service_proto_msgTypes[41]
+	mi := &file_orchestrator_service_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2965,7 +4106,7 @@ func (x *RewindInstanceRequest) String() string {
 func (*RewindInstanceRequest) ProtoMessage() {}
 
 func (x *RewindInstanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[41]
+	mi := &file_orchestrator_service_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2978,7 +4119,7 @@ func (x *RewindInstanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RewindInstanceRequest.ProtoReflect.Descriptor instead.
 func (*RewindInstanceRequest) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{41}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *RewindInstanceRequest) GetInstanceId() string {
@@ -3003,7 +4144,7 @@ type RewindInstanceResponse struct {
 
 func (x *RewindInstanceResponse) Reset() {
 	*x = RewindInstanceResponse{}
-	mi := &file_orchestrator_service_proto_msgTypes[42]
+	mi := &file_orchestrator_service_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3015,7 +4156,7 @@ func (x *RewindInstanceResponse) String() string {
 func (*RewindInstanceResponse) ProtoMessage() {}
 
 func (x *RewindInstanceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[42]
+	mi := &file_orchestrator_service_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3028,7 +4169,7 @@ func (x *RewindInstanceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RewindInstanceResponse.ProtoReflect.Descriptor instead.
 func (*RewindInstanceResponse) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{42}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{53}
 }
 
 type OrchestrationState struct {
@@ -3044,14 +4185,17 @@ type OrchestrationState struct {
 	Output                  *wrappers.StringValue  `protobuf:"bytes,9,opt,name=output,proto3" json:"output,omitempty"`
 	CustomStatus            *wrappers.StringValue  `protobuf:"bytes,10,opt,name=customStatus,proto3" json:"customStatus,omitempty"`
 	FailureDetails          *TaskFailureDetails    `protobuf:"bytes,11,opt,name=failureDetails,proto3" json:"failureDetails,omitempty"`
-	ParentInstanceId        *wrappers.StringValue  `protobuf:"bytes,12,opt,name=parentInstanceId,proto3" json:"parentInstanceId,omitempty"`
+	ExecutionId             *wrappers.StringValue  `protobuf:"bytes,12,opt,name=executionId,proto3" json:"executionId,omitempty"`
+	CompletedTimestamp      *timestamp.Timestamp   `protobuf:"bytes,13,opt,name=completedTimestamp,proto3" json:"completedTimestamp,omitempty"`
+	ParentInstanceId        *wrappers.StringValue  `protobuf:"bytes,14,opt,name=parentInstanceId,proto3" json:"parentInstanceId,omitempty"`
+	Tags                    map[string]string      `protobuf:"bytes,15,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
 
 func (x *OrchestrationState) Reset() {
 	*x = OrchestrationState{}
-	mi := &file_orchestrator_service_proto_msgTypes[43]
+	mi := &file_orchestrator_service_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3063,7 +4207,7 @@ func (x *OrchestrationState) String() string {
 func (*OrchestrationState) ProtoMessage() {}
 
 func (x *OrchestrationState) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[43]
+	mi := &file_orchestrator_service_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3076,7 +4220,7 @@ func (x *OrchestrationState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OrchestrationState.ProtoReflect.Descriptor instead.
 func (*OrchestrationState) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{43}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *OrchestrationState) GetInstanceId() string {
@@ -3156,9 +4300,30 @@ func (x *OrchestrationState) GetFailureDetails() *TaskFailureDetails {
 	return nil
 }
 
+func (x *OrchestrationState) GetExecutionId() *wrappers.StringValue {
+	if x != nil {
+		return x.ExecutionId
+	}
+	return nil
+}
+
+func (x *OrchestrationState) GetCompletedTimestamp() *timestamp.Timestamp {
+	if x != nil {
+		return x.CompletedTimestamp
+	}
+	return nil
+}
+
 func (x *OrchestrationState) GetParentInstanceId() *wrappers.StringValue {
 	if x != nil {
 		return x.ParentInstanceId
+	}
+	return nil
+}
+
+func (x *OrchestrationState) GetTags() map[string]string {
+	if x != nil {
+		return x.Tags
 	}
 	return nil
 }
@@ -3174,7 +4339,7 @@ type RaiseEventRequest struct {
 
 func (x *RaiseEventRequest) Reset() {
 	*x = RaiseEventRequest{}
-	mi := &file_orchestrator_service_proto_msgTypes[44]
+	mi := &file_orchestrator_service_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3186,7 +4351,7 @@ func (x *RaiseEventRequest) String() string {
 func (*RaiseEventRequest) ProtoMessage() {}
 
 func (x *RaiseEventRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[44]
+	mi := &file_orchestrator_service_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3199,7 +4364,7 @@ func (x *RaiseEventRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RaiseEventRequest.ProtoReflect.Descriptor instead.
 func (*RaiseEventRequest) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{44}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *RaiseEventRequest) GetInstanceId() string {
@@ -3231,7 +4396,7 @@ type RaiseEventResponse struct {
 
 func (x *RaiseEventResponse) Reset() {
 	*x = RaiseEventResponse{}
-	mi := &file_orchestrator_service_proto_msgTypes[45]
+	mi := &file_orchestrator_service_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3243,7 +4408,7 @@ func (x *RaiseEventResponse) String() string {
 func (*RaiseEventResponse) ProtoMessage() {}
 
 func (x *RaiseEventResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[45]
+	mi := &file_orchestrator_service_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3256,7 +4421,7 @@ func (x *RaiseEventResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RaiseEventResponse.ProtoReflect.Descriptor instead.
 func (*RaiseEventResponse) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{45}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{56}
 }
 
 type TerminateRequest struct {
@@ -3270,7 +4435,7 @@ type TerminateRequest struct {
 
 func (x *TerminateRequest) Reset() {
 	*x = TerminateRequest{}
-	mi := &file_orchestrator_service_proto_msgTypes[46]
+	mi := &file_orchestrator_service_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3282,7 +4447,7 @@ func (x *TerminateRequest) String() string {
 func (*TerminateRequest) ProtoMessage() {}
 
 func (x *TerminateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[46]
+	mi := &file_orchestrator_service_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3295,7 +4460,7 @@ func (x *TerminateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminateRequest.ProtoReflect.Descriptor instead.
 func (*TerminateRequest) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{46}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *TerminateRequest) GetInstanceId() string {
@@ -3327,7 +4492,7 @@ type TerminateResponse struct {
 
 func (x *TerminateResponse) Reset() {
 	*x = TerminateResponse{}
-	mi := &file_orchestrator_service_proto_msgTypes[47]
+	mi := &file_orchestrator_service_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3339,7 +4504,7 @@ func (x *TerminateResponse) String() string {
 func (*TerminateResponse) ProtoMessage() {}
 
 func (x *TerminateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[47]
+	mi := &file_orchestrator_service_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3352,7 +4517,7 @@ func (x *TerminateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminateResponse.ProtoReflect.Descriptor instead.
 func (*TerminateResponse) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{47}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{58}
 }
 
 type SuspendRequest struct {
@@ -3365,7 +4530,7 @@ type SuspendRequest struct {
 
 func (x *SuspendRequest) Reset() {
 	*x = SuspendRequest{}
-	mi := &file_orchestrator_service_proto_msgTypes[48]
+	mi := &file_orchestrator_service_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3377,7 +4542,7 @@ func (x *SuspendRequest) String() string {
 func (*SuspendRequest) ProtoMessage() {}
 
 func (x *SuspendRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[48]
+	mi := &file_orchestrator_service_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3390,7 +4555,7 @@ func (x *SuspendRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SuspendRequest.ProtoReflect.Descriptor instead.
 func (*SuspendRequest) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{48}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *SuspendRequest) GetInstanceId() string {
@@ -3415,7 +4580,7 @@ type SuspendResponse struct {
 
 func (x *SuspendResponse) Reset() {
 	*x = SuspendResponse{}
-	mi := &file_orchestrator_service_proto_msgTypes[49]
+	mi := &file_orchestrator_service_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3427,7 +4592,7 @@ func (x *SuspendResponse) String() string {
 func (*SuspendResponse) ProtoMessage() {}
 
 func (x *SuspendResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[49]
+	mi := &file_orchestrator_service_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3440,7 +4605,7 @@ func (x *SuspendResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SuspendResponse.ProtoReflect.Descriptor instead.
 func (*SuspendResponse) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{49}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{60}
 }
 
 type ResumeRequest struct {
@@ -3453,7 +4618,7 @@ type ResumeRequest struct {
 
 func (x *ResumeRequest) Reset() {
 	*x = ResumeRequest{}
-	mi := &file_orchestrator_service_proto_msgTypes[50]
+	mi := &file_orchestrator_service_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3465,7 +4630,7 @@ func (x *ResumeRequest) String() string {
 func (*ResumeRequest) ProtoMessage() {}
 
 func (x *ResumeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[50]
+	mi := &file_orchestrator_service_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3478,7 +4643,7 @@ func (x *ResumeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResumeRequest.ProtoReflect.Descriptor instead.
 func (*ResumeRequest) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{50}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *ResumeRequest) GetInstanceId() string {
@@ -3503,7 +4668,7 @@ type ResumeResponse struct {
 
 func (x *ResumeResponse) Reset() {
 	*x = ResumeResponse{}
-	mi := &file_orchestrator_service_proto_msgTypes[51]
+	mi := &file_orchestrator_service_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3515,7 +4680,7 @@ func (x *ResumeResponse) String() string {
 func (*ResumeResponse) ProtoMessage() {}
 
 func (x *ResumeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[51]
+	mi := &file_orchestrator_service_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3528,7 +4693,7 @@ func (x *ResumeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResumeResponse.ProtoReflect.Descriptor instead.
 func (*ResumeResponse) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{51}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{62}
 }
 
 type QueryInstancesRequest struct {
@@ -3540,7 +4705,7 @@ type QueryInstancesRequest struct {
 
 func (x *QueryInstancesRequest) Reset() {
 	*x = QueryInstancesRequest{}
-	mi := &file_orchestrator_service_proto_msgTypes[52]
+	mi := &file_orchestrator_service_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3552,7 +4717,7 @@ func (x *QueryInstancesRequest) String() string {
 func (*QueryInstancesRequest) ProtoMessage() {}
 
 func (x *QueryInstancesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[52]
+	mi := &file_orchestrator_service_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3565,7 +4730,7 @@ func (x *QueryInstancesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryInstancesRequest.ProtoReflect.Descriptor instead.
 func (*QueryInstancesRequest) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{52}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *QueryInstancesRequest) GetQuery() *InstanceQuery {
@@ -3591,7 +4756,7 @@ type InstanceQuery struct {
 
 func (x *InstanceQuery) Reset() {
 	*x = InstanceQuery{}
-	mi := &file_orchestrator_service_proto_msgTypes[53]
+	mi := &file_orchestrator_service_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3603,7 +4768,7 @@ func (x *InstanceQuery) String() string {
 func (*InstanceQuery) ProtoMessage() {}
 
 func (x *InstanceQuery) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[53]
+	mi := &file_orchestrator_service_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3616,7 +4781,7 @@ func (x *InstanceQuery) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InstanceQuery.ProtoReflect.Descriptor instead.
 func (*InstanceQuery) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{53}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{64}
 }
 
 func (x *InstanceQuery) GetRuntimeStatus() []OrchestrationStatus {
@@ -3685,7 +4850,7 @@ type QueryInstancesResponse struct {
 
 func (x *QueryInstancesResponse) Reset() {
 	*x = QueryInstancesResponse{}
-	mi := &file_orchestrator_service_proto_msgTypes[54]
+	mi := &file_orchestrator_service_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3697,7 +4862,7 @@ func (x *QueryInstancesResponse) String() string {
 func (*QueryInstancesResponse) ProtoMessage() {}
 
 func (x *QueryInstancesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[54]
+	mi := &file_orchestrator_service_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3710,7 +4875,7 @@ func (x *QueryInstancesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryInstancesResponse.ProtoReflect.Descriptor instead.
 func (*QueryInstancesResponse) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{54}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *QueryInstancesResponse) GetOrchestrationState() []*OrchestrationState {
@@ -3727,21 +4892,152 @@ func (x *QueryInstancesResponse) GetContinuationToken() *wrappers.StringValue {
 	return nil
 }
 
+type ListInstanceIdsRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	RuntimeStatus     []OrchestrationStatus  `protobuf:"varint,1,rep,packed,name=runtimeStatus,proto3,enum=OrchestrationStatus" json:"runtimeStatus,omitempty"`
+	CompletedTimeFrom *timestamp.Timestamp   `protobuf:"bytes,2,opt,name=completedTimeFrom,proto3" json:"completedTimeFrom,omitempty"`
+	CompletedTimeTo   *timestamp.Timestamp   `protobuf:"bytes,3,opt,name=completedTimeTo,proto3" json:"completedTimeTo,omitempty"`
+	PageSize          int32                  `protobuf:"varint,4,opt,name=pageSize,proto3" json:"pageSize,omitempty"`
+	LastInstanceKey   *wrappers.StringValue  `protobuf:"bytes,5,opt,name=lastInstanceKey,proto3" json:"lastInstanceKey,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *ListInstanceIdsRequest) Reset() {
+	*x = ListInstanceIdsRequest{}
+	mi := &file_orchestrator_service_proto_msgTypes[66]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListInstanceIdsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListInstanceIdsRequest) ProtoMessage() {}
+
+func (x *ListInstanceIdsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[66]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListInstanceIdsRequest.ProtoReflect.Descriptor instead.
+func (*ListInstanceIdsRequest) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{66}
+}
+
+func (x *ListInstanceIdsRequest) GetRuntimeStatus() []OrchestrationStatus {
+	if x != nil {
+		return x.RuntimeStatus
+	}
+	return nil
+}
+
+func (x *ListInstanceIdsRequest) GetCompletedTimeFrom() *timestamp.Timestamp {
+	if x != nil {
+		return x.CompletedTimeFrom
+	}
+	return nil
+}
+
+func (x *ListInstanceIdsRequest) GetCompletedTimeTo() *timestamp.Timestamp {
+	if x != nil {
+		return x.CompletedTimeTo
+	}
+	return nil
+}
+
+func (x *ListInstanceIdsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListInstanceIdsRequest) GetLastInstanceKey() *wrappers.StringValue {
+	if x != nil {
+		return x.LastInstanceKey
+	}
+	return nil
+}
+
+type ListInstanceIdsResponse struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	InstanceIds     []string               `protobuf:"bytes,1,rep,name=instanceIds,proto3" json:"instanceIds,omitempty"`
+	LastInstanceKey *wrappers.StringValue  `protobuf:"bytes,2,opt,name=lastInstanceKey,proto3" json:"lastInstanceKey,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *ListInstanceIdsResponse) Reset() {
+	*x = ListInstanceIdsResponse{}
+	mi := &file_orchestrator_service_proto_msgTypes[67]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListInstanceIdsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListInstanceIdsResponse) ProtoMessage() {}
+
+func (x *ListInstanceIdsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[67]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListInstanceIdsResponse.ProtoReflect.Descriptor instead.
+func (*ListInstanceIdsResponse) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{67}
+}
+
+func (x *ListInstanceIdsResponse) GetInstanceIds() []string {
+	if x != nil {
+		return x.InstanceIds
+	}
+	return nil
+}
+
+func (x *ListInstanceIdsResponse) GetLastInstanceKey() *wrappers.StringValue {
+	if x != nil {
+		return x.LastInstanceKey
+	}
+	return nil
+}
+
 type PurgeInstancesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Request:
 	//
 	//	*PurgeInstancesRequest_InstanceId
 	//	*PurgeInstancesRequest_PurgeInstanceFilter
-	Request       isPurgeInstancesRequest_Request `protobuf_oneof:"request"`
-	Recursive     bool                            `protobuf:"varint,3,opt,name=recursive,proto3" json:"recursive,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	//	*PurgeInstancesRequest_InstanceBatch
+	Request   isPurgeInstancesRequest_Request `protobuf_oneof:"request"`
+	Recursive bool                            `protobuf:"varint,3,opt,name=recursive,proto3" json:"recursive,omitempty"`
+	// used in the case when an instanceId is specified to determine if the purge request is for an orchestration (as opposed to an entity)
+	IsOrchestration bool `protobuf:"varint,5,opt,name=isOrchestration,proto3" json:"isOrchestration,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *PurgeInstancesRequest) Reset() {
 	*x = PurgeInstancesRequest{}
-	mi := &file_orchestrator_service_proto_msgTypes[55]
+	mi := &file_orchestrator_service_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3753,7 +5049,7 @@ func (x *PurgeInstancesRequest) String() string {
 func (*PurgeInstancesRequest) ProtoMessage() {}
 
 func (x *PurgeInstancesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[55]
+	mi := &file_orchestrator_service_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3766,7 +5062,7 @@ func (x *PurgeInstancesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PurgeInstancesRequest.ProtoReflect.Descriptor instead.
 func (*PurgeInstancesRequest) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{55}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{68}
 }
 
 func (x *PurgeInstancesRequest) GetRequest() isPurgeInstancesRequest_Request {
@@ -3794,9 +5090,25 @@ func (x *PurgeInstancesRequest) GetPurgeInstanceFilter() *PurgeInstanceFilter {
 	return nil
 }
 
+func (x *PurgeInstancesRequest) GetInstanceBatch() *InstanceBatch {
+	if x != nil {
+		if x, ok := x.Request.(*PurgeInstancesRequest_InstanceBatch); ok {
+			return x.InstanceBatch
+		}
+	}
+	return nil
+}
+
 func (x *PurgeInstancesRequest) GetRecursive() bool {
 	if x != nil {
 		return x.Recursive
+	}
+	return false
+}
+
+func (x *PurgeInstancesRequest) GetIsOrchestration() bool {
+	if x != nil {
+		return x.IsOrchestration
 	}
 	return false
 }
@@ -3813,22 +5125,29 @@ type PurgeInstancesRequest_PurgeInstanceFilter struct {
 	PurgeInstanceFilter *PurgeInstanceFilter `protobuf:"bytes,2,opt,name=purgeInstanceFilter,proto3,oneof"`
 }
 
+type PurgeInstancesRequest_InstanceBatch struct {
+	InstanceBatch *InstanceBatch `protobuf:"bytes,4,opt,name=instanceBatch,proto3,oneof"`
+}
+
 func (*PurgeInstancesRequest_InstanceId) isPurgeInstancesRequest_Request() {}
 
 func (*PurgeInstancesRequest_PurgeInstanceFilter) isPurgeInstancesRequest_Request() {}
+
+func (*PurgeInstancesRequest_InstanceBatch) isPurgeInstancesRequest_Request() {}
 
 type PurgeInstanceFilter struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	CreatedTimeFrom *timestamp.Timestamp   `protobuf:"bytes,1,opt,name=createdTimeFrom,proto3" json:"createdTimeFrom,omitempty"`
 	CreatedTimeTo   *timestamp.Timestamp   `protobuf:"bytes,2,opt,name=createdTimeTo,proto3" json:"createdTimeTo,omitempty"`
 	RuntimeStatus   []OrchestrationStatus  `protobuf:"varint,3,rep,packed,name=runtimeStatus,proto3,enum=OrchestrationStatus" json:"runtimeStatus,omitempty"`
+	Timeout         *duration.Duration     `protobuf:"bytes,4,opt,name=timeout,proto3" json:"timeout,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
 
 func (x *PurgeInstanceFilter) Reset() {
 	*x = PurgeInstanceFilter{}
-	mi := &file_orchestrator_service_proto_msgTypes[56]
+	mi := &file_orchestrator_service_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3840,7 +5159,7 @@ func (x *PurgeInstanceFilter) String() string {
 func (*PurgeInstanceFilter) ProtoMessage() {}
 
 func (x *PurgeInstanceFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[56]
+	mi := &file_orchestrator_service_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3853,7 +5172,7 @@ func (x *PurgeInstanceFilter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PurgeInstanceFilter.ProtoReflect.Descriptor instead.
 func (*PurgeInstanceFilter) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{56}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{69}
 }
 
 func (x *PurgeInstanceFilter) GetCreatedTimeFrom() *timestamp.Timestamp {
@@ -3877,16 +5196,24 @@ func (x *PurgeInstanceFilter) GetRuntimeStatus() []OrchestrationStatus {
 	return nil
 }
 
+func (x *PurgeInstanceFilter) GetTimeout() *duration.Duration {
+	if x != nil {
+		return x.Timeout
+	}
+	return nil
+}
+
 type PurgeInstancesResponse struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	DeletedInstanceCount int32                  `protobuf:"varint,1,opt,name=deletedInstanceCount,proto3" json:"deletedInstanceCount,omitempty"`
+	IsComplete           *wrappers.BoolValue    `protobuf:"bytes,2,opt,name=isComplete,proto3" json:"isComplete,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
 
 func (x *PurgeInstancesResponse) Reset() {
 	*x = PurgeInstancesResponse{}
-	mi := &file_orchestrator_service_proto_msgTypes[57]
+	mi := &file_orchestrator_service_proto_msgTypes[70]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3898,7 +5225,7 @@ func (x *PurgeInstancesResponse) String() string {
 func (*PurgeInstancesResponse) ProtoMessage() {}
 
 func (x *PurgeInstancesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[57]
+	mi := &file_orchestrator_service_proto_msgTypes[70]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3911,7 +5238,7 @@ func (x *PurgeInstancesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PurgeInstancesResponse.ProtoReflect.Descriptor instead.
 func (*PurgeInstancesResponse) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{57}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{70}
 }
 
 func (x *PurgeInstancesResponse) GetDeletedInstanceCount() int32 {
@@ -3919,6 +5246,109 @@ func (x *PurgeInstancesResponse) GetDeletedInstanceCount() int32 {
 		return x.DeletedInstanceCount
 	}
 	return 0
+}
+
+func (x *PurgeInstancesResponse) GetIsComplete() *wrappers.BoolValue {
+	if x != nil {
+		return x.IsComplete
+	}
+	return nil
+}
+
+type RestartInstanceRequest struct {
+	state                    protoimpl.MessageState `protogen:"open.v1"`
+	InstanceId               string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
+	RestartWithNewInstanceId bool                   `protobuf:"varint,2,opt,name=restartWithNewInstanceId,proto3" json:"restartWithNewInstanceId,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
+}
+
+func (x *RestartInstanceRequest) Reset() {
+	*x = RestartInstanceRequest{}
+	mi := &file_orchestrator_service_proto_msgTypes[71]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RestartInstanceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RestartInstanceRequest) ProtoMessage() {}
+
+func (x *RestartInstanceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[71]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RestartInstanceRequest.ProtoReflect.Descriptor instead.
+func (*RestartInstanceRequest) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{71}
+}
+
+func (x *RestartInstanceRequest) GetInstanceId() string {
+	if x != nil {
+		return x.InstanceId
+	}
+	return ""
+}
+
+func (x *RestartInstanceRequest) GetRestartWithNewInstanceId() bool {
+	if x != nil {
+		return x.RestartWithNewInstanceId
+	}
+	return false
+}
+
+type RestartInstanceResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	InstanceId    string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RestartInstanceResponse) Reset() {
+	*x = RestartInstanceResponse{}
+	mi := &file_orchestrator_service_proto_msgTypes[72]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RestartInstanceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RestartInstanceResponse) ProtoMessage() {}
+
+func (x *RestartInstanceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[72]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RestartInstanceResponse.ProtoReflect.Descriptor instead.
+func (*RestartInstanceResponse) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{72}
+}
+
+func (x *RestartInstanceResponse) GetInstanceId() string {
+	if x != nil {
+		return x.InstanceId
+	}
+	return ""
 }
 
 type CreateTaskHubRequest struct {
@@ -3930,7 +5360,7 @@ type CreateTaskHubRequest struct {
 
 func (x *CreateTaskHubRequest) Reset() {
 	*x = CreateTaskHubRequest{}
-	mi := &file_orchestrator_service_proto_msgTypes[58]
+	mi := &file_orchestrator_service_proto_msgTypes[73]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3942,7 +5372,7 @@ func (x *CreateTaskHubRequest) String() string {
 func (*CreateTaskHubRequest) ProtoMessage() {}
 
 func (x *CreateTaskHubRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[58]
+	mi := &file_orchestrator_service_proto_msgTypes[73]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3955,7 +5385,7 @@ func (x *CreateTaskHubRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTaskHubRequest.ProtoReflect.Descriptor instead.
 func (*CreateTaskHubRequest) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{58}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{73}
 }
 
 func (x *CreateTaskHubRequest) GetRecreateIfExists() bool {
@@ -3973,7 +5403,7 @@ type CreateTaskHubResponse struct {
 
 func (x *CreateTaskHubResponse) Reset() {
 	*x = CreateTaskHubResponse{}
-	mi := &file_orchestrator_service_proto_msgTypes[59]
+	mi := &file_orchestrator_service_proto_msgTypes[74]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3985,7 +5415,7 @@ func (x *CreateTaskHubResponse) String() string {
 func (*CreateTaskHubResponse) ProtoMessage() {}
 
 func (x *CreateTaskHubResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[59]
+	mi := &file_orchestrator_service_proto_msgTypes[74]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3998,7 +5428,7 @@ func (x *CreateTaskHubResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTaskHubResponse.ProtoReflect.Descriptor instead.
 func (*CreateTaskHubResponse) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{59}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{74}
 }
 
 type DeleteTaskHubRequest struct {
@@ -4009,7 +5439,7 @@ type DeleteTaskHubRequest struct {
 
 func (x *DeleteTaskHubRequest) Reset() {
 	*x = DeleteTaskHubRequest{}
-	mi := &file_orchestrator_service_proto_msgTypes[60]
+	mi := &file_orchestrator_service_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4021,7 +5451,7 @@ func (x *DeleteTaskHubRequest) String() string {
 func (*DeleteTaskHubRequest) ProtoMessage() {}
 
 func (x *DeleteTaskHubRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[60]
+	mi := &file_orchestrator_service_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4034,7 +5464,7 @@ func (x *DeleteTaskHubRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTaskHubRequest.ProtoReflect.Descriptor instead.
 func (*DeleteTaskHubRequest) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{60}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{75}
 }
 
 type DeleteTaskHubResponse struct {
@@ -4045,7 +5475,7 @@ type DeleteTaskHubResponse struct {
 
 func (x *DeleteTaskHubResponse) Reset() {
 	*x = DeleteTaskHubResponse{}
-	mi := &file_orchestrator_service_proto_msgTypes[61]
+	mi := &file_orchestrator_service_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4057,7 +5487,7 @@ func (x *DeleteTaskHubResponse) String() string {
 func (*DeleteTaskHubResponse) ProtoMessage() {}
 
 func (x *DeleteTaskHubResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[61]
+	mi := &file_orchestrator_service_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4070,23 +5500,25 @@ func (x *DeleteTaskHubResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTaskHubResponse.ProtoReflect.Descriptor instead.
 func (*DeleteTaskHubResponse) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{61}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{76}
 }
 
 type SignalEntityRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	InstanceId    string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Input         *wrappers.StringValue  `protobuf:"bytes,3,opt,name=input,proto3" json:"input,omitempty"`
-	RequestId     string                 `protobuf:"bytes,4,opt,name=requestId,proto3" json:"requestId,omitempty"`
-	ScheduledTime *timestamp.Timestamp   `protobuf:"bytes,5,opt,name=scheduledTime,proto3" json:"scheduledTime,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	InstanceId         string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
+	Name               string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Input              *wrappers.StringValue  `protobuf:"bytes,3,opt,name=input,proto3" json:"input,omitempty"`
+	RequestId          string                 `protobuf:"bytes,4,opt,name=requestId,proto3" json:"requestId,omitempty"`
+	ScheduledTime      *timestamp.Timestamp   `protobuf:"bytes,5,opt,name=scheduledTime,proto3" json:"scheduledTime,omitempty"`
+	ParentTraceContext *TraceContext          `protobuf:"bytes,6,opt,name=parentTraceContext,proto3" json:"parentTraceContext,omitempty"`
+	RequestTime        *timestamp.Timestamp   `protobuf:"bytes,7,opt,name=requestTime,proto3" json:"requestTime,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *SignalEntityRequest) Reset() {
 	*x = SignalEntityRequest{}
-	mi := &file_orchestrator_service_proto_msgTypes[62]
+	mi := &file_orchestrator_service_proto_msgTypes[77]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4098,7 +5530,7 @@ func (x *SignalEntityRequest) String() string {
 func (*SignalEntityRequest) ProtoMessage() {}
 
 func (x *SignalEntityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[62]
+	mi := &file_orchestrator_service_proto_msgTypes[77]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4111,7 +5543,7 @@ func (x *SignalEntityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignalEntityRequest.ProtoReflect.Descriptor instead.
 func (*SignalEntityRequest) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{62}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{77}
 }
 
 func (x *SignalEntityRequest) GetInstanceId() string {
@@ -4149,6 +5581,20 @@ func (x *SignalEntityRequest) GetScheduledTime() *timestamp.Timestamp {
 	return nil
 }
 
+func (x *SignalEntityRequest) GetParentTraceContext() *TraceContext {
+	if x != nil {
+		return x.ParentTraceContext
+	}
+	return nil
+}
+
+func (x *SignalEntityRequest) GetRequestTime() *timestamp.Timestamp {
+	if x != nil {
+		return x.RequestTime
+	}
+	return nil
+}
+
 type SignalEntityResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -4157,7 +5603,7 @@ type SignalEntityResponse struct {
 
 func (x *SignalEntityResponse) Reset() {
 	*x = SignalEntityResponse{}
-	mi := &file_orchestrator_service_proto_msgTypes[63]
+	mi := &file_orchestrator_service_proto_msgTypes[78]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4169,7 +5615,7 @@ func (x *SignalEntityResponse) String() string {
 func (*SignalEntityResponse) ProtoMessage() {}
 
 func (x *SignalEntityResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[63]
+	mi := &file_orchestrator_service_proto_msgTypes[78]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4182,7 +5628,7 @@ func (x *SignalEntityResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignalEntityResponse.ProtoReflect.Descriptor instead.
 func (*SignalEntityResponse) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{63}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{78}
 }
 
 type GetEntityRequest struct {
@@ -4195,7 +5641,7 @@ type GetEntityRequest struct {
 
 func (x *GetEntityRequest) Reset() {
 	*x = GetEntityRequest{}
-	mi := &file_orchestrator_service_proto_msgTypes[64]
+	mi := &file_orchestrator_service_proto_msgTypes[79]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4207,7 +5653,7 @@ func (x *GetEntityRequest) String() string {
 func (*GetEntityRequest) ProtoMessage() {}
 
 func (x *GetEntityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[64]
+	mi := &file_orchestrator_service_proto_msgTypes[79]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4220,7 +5666,7 @@ func (x *GetEntityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEntityRequest.ProtoReflect.Descriptor instead.
 func (*GetEntityRequest) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{64}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{79}
 }
 
 func (x *GetEntityRequest) GetInstanceId() string {
@@ -4247,7 +5693,7 @@ type GetEntityResponse struct {
 
 func (x *GetEntityResponse) Reset() {
 	*x = GetEntityResponse{}
-	mi := &file_orchestrator_service_proto_msgTypes[65]
+	mi := &file_orchestrator_service_proto_msgTypes[80]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4259,7 +5705,7 @@ func (x *GetEntityResponse) String() string {
 func (*GetEntityResponse) ProtoMessage() {}
 
 func (x *GetEntityResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[65]
+	mi := &file_orchestrator_service_proto_msgTypes[80]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4272,7 +5718,7 @@ func (x *GetEntityResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEntityResponse.ProtoReflect.Descriptor instead.
 func (*GetEntityResponse) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{65}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{80}
 }
 
 func (x *GetEntityResponse) GetExists() bool {
@@ -4304,7 +5750,7 @@ type EntityQuery struct {
 
 func (x *EntityQuery) Reset() {
 	*x = EntityQuery{}
-	mi := &file_orchestrator_service_proto_msgTypes[66]
+	mi := &file_orchestrator_service_proto_msgTypes[81]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4316,7 +5762,7 @@ func (x *EntityQuery) String() string {
 func (*EntityQuery) ProtoMessage() {}
 
 func (x *EntityQuery) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[66]
+	mi := &file_orchestrator_service_proto_msgTypes[81]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4329,7 +5775,7 @@ func (x *EntityQuery) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EntityQuery.ProtoReflect.Descriptor instead.
 func (*EntityQuery) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{66}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{81}
 }
 
 func (x *EntityQuery) GetInstanceIdStartsWith() *wrappers.StringValue {
@@ -4390,7 +5836,7 @@ type QueryEntitiesRequest struct {
 
 func (x *QueryEntitiesRequest) Reset() {
 	*x = QueryEntitiesRequest{}
-	mi := &file_orchestrator_service_proto_msgTypes[67]
+	mi := &file_orchestrator_service_proto_msgTypes[82]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4402,7 +5848,7 @@ func (x *QueryEntitiesRequest) String() string {
 func (*QueryEntitiesRequest) ProtoMessage() {}
 
 func (x *QueryEntitiesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[67]
+	mi := &file_orchestrator_service_proto_msgTypes[82]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4415,7 +5861,7 @@ func (x *QueryEntitiesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryEntitiesRequest.ProtoReflect.Descriptor instead.
 func (*QueryEntitiesRequest) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{67}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{82}
 }
 
 func (x *QueryEntitiesRequest) GetQuery() *EntityQuery {
@@ -4435,7 +5881,7 @@ type QueryEntitiesResponse struct {
 
 func (x *QueryEntitiesResponse) Reset() {
 	*x = QueryEntitiesResponse{}
-	mi := &file_orchestrator_service_proto_msgTypes[68]
+	mi := &file_orchestrator_service_proto_msgTypes[83]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4447,7 +5893,7 @@ func (x *QueryEntitiesResponse) String() string {
 func (*QueryEntitiesResponse) ProtoMessage() {}
 
 func (x *QueryEntitiesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[68]
+	mi := &file_orchestrator_service_proto_msgTypes[83]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4460,7 +5906,7 @@ func (x *QueryEntitiesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryEntitiesResponse.ProtoReflect.Descriptor instead.
 func (*QueryEntitiesResponse) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{68}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{83}
 }
 
 func (x *QueryEntitiesResponse) GetEntities() []*EntityMetadata {
@@ -4490,7 +5936,7 @@ type EntityMetadata struct {
 
 func (x *EntityMetadata) Reset() {
 	*x = EntityMetadata{}
-	mi := &file_orchestrator_service_proto_msgTypes[69]
+	mi := &file_orchestrator_service_proto_msgTypes[84]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4502,7 +5948,7 @@ func (x *EntityMetadata) String() string {
 func (*EntityMetadata) ProtoMessage() {}
 
 func (x *EntityMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[69]
+	mi := &file_orchestrator_service_proto_msgTypes[84]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4515,7 +5961,7 @@ func (x *EntityMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EntityMetadata.ProtoReflect.Descriptor instead.
 func (*EntityMetadata) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{69}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{84}
 }
 
 func (x *EntityMetadata) GetInstanceId() string {
@@ -4564,7 +6010,7 @@ type CleanEntityStorageRequest struct {
 
 func (x *CleanEntityStorageRequest) Reset() {
 	*x = CleanEntityStorageRequest{}
-	mi := &file_orchestrator_service_proto_msgTypes[70]
+	mi := &file_orchestrator_service_proto_msgTypes[85]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4576,7 +6022,7 @@ func (x *CleanEntityStorageRequest) String() string {
 func (*CleanEntityStorageRequest) ProtoMessage() {}
 
 func (x *CleanEntityStorageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[70]
+	mi := &file_orchestrator_service_proto_msgTypes[85]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4589,7 +6035,7 @@ func (x *CleanEntityStorageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CleanEntityStorageRequest.ProtoReflect.Descriptor instead.
 func (*CleanEntityStorageRequest) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{70}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{85}
 }
 
 func (x *CleanEntityStorageRequest) GetContinuationToken() *wrappers.StringValue {
@@ -4624,7 +6070,7 @@ type CleanEntityStorageResponse struct {
 
 func (x *CleanEntityStorageResponse) Reset() {
 	*x = CleanEntityStorageResponse{}
-	mi := &file_orchestrator_service_proto_msgTypes[71]
+	mi := &file_orchestrator_service_proto_msgTypes[86]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4636,7 +6082,7 @@ func (x *CleanEntityStorageResponse) String() string {
 func (*CleanEntityStorageResponse) ProtoMessage() {}
 
 func (x *CleanEntityStorageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[71]
+	mi := &file_orchestrator_service_proto_msgTypes[86]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4649,7 +6095,7 @@ func (x *CleanEntityStorageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CleanEntityStorageResponse.ProtoReflect.Descriptor instead.
 func (*CleanEntityStorageResponse) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{71}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{86}
 }
 
 func (x *CleanEntityStorageResponse) GetContinuationToken() *wrappers.StringValue {
@@ -4682,7 +6128,7 @@ type OrchestratorEntityParameters struct {
 
 func (x *OrchestratorEntityParameters) Reset() {
 	*x = OrchestratorEntityParameters{}
-	mi := &file_orchestrator_service_proto_msgTypes[72]
+	mi := &file_orchestrator_service_proto_msgTypes[87]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4694,7 +6140,7 @@ func (x *OrchestratorEntityParameters) String() string {
 func (*OrchestratorEntityParameters) ProtoMessage() {}
 
 func (x *OrchestratorEntityParameters) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[72]
+	mi := &file_orchestrator_service_proto_msgTypes[87]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4707,7 +6153,7 @@ func (x *OrchestratorEntityParameters) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OrchestratorEntityParameters.ProtoReflect.Descriptor instead.
 func (*OrchestratorEntityParameters) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{72}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{87}
 }
 
 func (x *OrchestratorEntityParameters) GetEntityMessageReorderWindow() *duration.Duration {
@@ -4718,17 +6164,18 @@ func (x *OrchestratorEntityParameters) GetEntityMessageReorderWindow() *duration
 }
 
 type EntityBatchRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	InstanceId    string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
-	EntityState   *wrappers.StringValue  `protobuf:"bytes,2,opt,name=entityState,proto3" json:"entityState,omitempty"`
-	Operations    []*OperationRequest    `protobuf:"bytes,3,rep,name=operations,proto3" json:"operations,omitempty"`
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	InstanceId    string                    `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
+	EntityState   *wrappers.StringValue     `protobuf:"bytes,2,opt,name=entityState,proto3" json:"entityState,omitempty"`
+	Operations    []*OperationRequest       `protobuf:"bytes,3,rep,name=operations,proto3" json:"operations,omitempty"`
+	Properties    map[string]*_struct.Value `protobuf:"bytes,4,rep,name=properties,proto3" json:"properties,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *EntityBatchRequest) Reset() {
 	*x = EntityBatchRequest{}
-	mi := &file_orchestrator_service_proto_msgTypes[73]
+	mi := &file_orchestrator_service_proto_msgTypes[88]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4740,7 +6187,7 @@ func (x *EntityBatchRequest) String() string {
 func (*EntityBatchRequest) ProtoMessage() {}
 
 func (x *EntityBatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[73]
+	mi := &file_orchestrator_service_proto_msgTypes[88]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4753,7 +6200,7 @@ func (x *EntityBatchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EntityBatchRequest.ProtoReflect.Descriptor instead.
 func (*EntityBatchRequest) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{73}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{88}
 }
 
 func (x *EntityBatchRequest) GetInstanceId() string {
@@ -4777,19 +6224,30 @@ func (x *EntityBatchRequest) GetOperations() []*OperationRequest {
 	return nil
 }
 
+func (x *EntityBatchRequest) GetProperties() map[string]*_struct.Value {
+	if x != nil {
+		return x.Properties
+	}
+	return nil
+}
+
 type EntityBatchResult struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	Results        []*OperationResult     `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
-	Actions        []*OperationAction     `protobuf:"bytes,2,rep,name=actions,proto3" json:"actions,omitempty"`
-	EntityState    *wrappers.StringValue  `protobuf:"bytes,3,opt,name=entityState,proto3" json:"entityState,omitempty"`
-	FailureDetails *TaskFailureDetails    `protobuf:"bytes,4,opt,name=failureDetails,proto3" json:"failureDetails,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Results         []*OperationResult     `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	Actions         []*OperationAction     `protobuf:"bytes,2,rep,name=actions,proto3" json:"actions,omitempty"`
+	EntityState     *wrappers.StringValue  `protobuf:"bytes,3,opt,name=entityState,proto3" json:"entityState,omitempty"`
+	FailureDetails  *TaskFailureDetails    `protobuf:"bytes,4,opt,name=failureDetails,proto3" json:"failureDetails,omitempty"`
+	CompletionToken string                 `protobuf:"bytes,5,opt,name=completionToken,proto3" json:"completionToken,omitempty"`
+	OperationInfos  []*OperationInfo       `protobuf:"bytes,6,rep,name=operationInfos,proto3" json:"operationInfos,omitempty"` // used only with DTS
+	// Whether or not an entity state is required to complete the original EntityBatchRequest and none was provided.
+	RequiresState bool `protobuf:"varint,7,opt,name=requiresState,proto3" json:"requiresState,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *EntityBatchResult) Reset() {
 	*x = EntityBatchResult{}
-	mi := &file_orchestrator_service_proto_msgTypes[74]
+	mi := &file_orchestrator_service_proto_msgTypes[89]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4801,7 +6259,7 @@ func (x *EntityBatchResult) String() string {
 func (*EntityBatchResult) ProtoMessage() {}
 
 func (x *EntityBatchResult) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[74]
+	mi := &file_orchestrator_service_proto_msgTypes[89]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4814,7 +6272,7 @@ func (x *EntityBatchResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EntityBatchResult.ProtoReflect.Descriptor instead.
 func (*EntityBatchResult) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{74}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{89}
 }
 
 func (x *EntityBatchResult) GetResults() []*OperationResult {
@@ -4845,18 +6303,108 @@ func (x *EntityBatchResult) GetFailureDetails() *TaskFailureDetails {
 	return nil
 }
 
+func (x *EntityBatchResult) GetCompletionToken() string {
+	if x != nil {
+		return x.CompletionToken
+	}
+	return ""
+}
+
+func (x *EntityBatchResult) GetOperationInfos() []*OperationInfo {
+	if x != nil {
+		return x.OperationInfos
+	}
+	return nil
+}
+
+func (x *EntityBatchResult) GetRequiresState() bool {
+	if x != nil {
+		return x.RequiresState
+	}
+	return false
+}
+
+type EntityRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	InstanceId        string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
+	ExecutionId       string                 `protobuf:"bytes,2,opt,name=executionId,proto3" json:"executionId,omitempty"`
+	EntityState       *wrappers.StringValue  `protobuf:"bytes,3,opt,name=entityState,proto3" json:"entityState,omitempty"` // null if entity does not exist
+	OperationRequests []*HistoryEvent        `protobuf:"bytes,4,rep,name=operationRequests,proto3" json:"operationRequests,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *EntityRequest) Reset() {
+	*x = EntityRequest{}
+	mi := &file_orchestrator_service_proto_msgTypes[90]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EntityRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EntityRequest) ProtoMessage() {}
+
+func (x *EntityRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[90]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EntityRequest.ProtoReflect.Descriptor instead.
+func (*EntityRequest) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{90}
+}
+
+func (x *EntityRequest) GetInstanceId() string {
+	if x != nil {
+		return x.InstanceId
+	}
+	return ""
+}
+
+func (x *EntityRequest) GetExecutionId() string {
+	if x != nil {
+		return x.ExecutionId
+	}
+	return ""
+}
+
+func (x *EntityRequest) GetEntityState() *wrappers.StringValue {
+	if x != nil {
+		return x.EntityState
+	}
+	return nil
+}
+
+func (x *EntityRequest) GetOperationRequests() []*HistoryEvent {
+	if x != nil {
+		return x.OperationRequests
+	}
+	return nil
+}
+
 type OperationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Operation     string                 `protobuf:"bytes,1,opt,name=operation,proto3" json:"operation,omitempty"`
 	RequestId     string                 `protobuf:"bytes,2,opt,name=requestId,proto3" json:"requestId,omitempty"`
 	Input         *wrappers.StringValue  `protobuf:"bytes,3,opt,name=input,proto3" json:"input,omitempty"`
+	TraceContext  *TraceContext          `protobuf:"bytes,4,opt,name=traceContext,proto3" json:"traceContext,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OperationRequest) Reset() {
 	*x = OperationRequest{}
-	mi := &file_orchestrator_service_proto_msgTypes[75]
+	mi := &file_orchestrator_service_proto_msgTypes[91]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4868,7 +6416,7 @@ func (x *OperationRequest) String() string {
 func (*OperationRequest) ProtoMessage() {}
 
 func (x *OperationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[75]
+	mi := &file_orchestrator_service_proto_msgTypes[91]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4881,7 +6429,7 @@ func (x *OperationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OperationRequest.ProtoReflect.Descriptor instead.
 func (*OperationRequest) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{75}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{91}
 }
 
 func (x *OperationRequest) GetOperation() string {
@@ -4905,6 +6453,13 @@ func (x *OperationRequest) GetInput() *wrappers.StringValue {
 	return nil
 }
 
+func (x *OperationRequest) GetTraceContext() *TraceContext {
+	if x != nil {
+		return x.TraceContext
+	}
+	return nil
+}
+
 type OperationResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to ResultType:
@@ -4918,7 +6473,7 @@ type OperationResult struct {
 
 func (x *OperationResult) Reset() {
 	*x = OperationResult{}
-	mi := &file_orchestrator_service_proto_msgTypes[76]
+	mi := &file_orchestrator_service_proto_msgTypes[92]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4930,7 +6485,7 @@ func (x *OperationResult) String() string {
 func (*OperationResult) ProtoMessage() {}
 
 func (x *OperationResult) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[76]
+	mi := &file_orchestrator_service_proto_msgTypes[92]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4943,7 +6498,7 @@ func (x *OperationResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OperationResult.ProtoReflect.Descriptor instead.
 func (*OperationResult) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{76}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{92}
 }
 
 func (x *OperationResult) GetResultType() isOperationResult_ResultType {
@@ -4987,16 +6542,70 @@ func (*OperationResult_Success) isOperationResult_ResultType() {}
 
 func (*OperationResult_Failure) isOperationResult_ResultType() {}
 
+type OperationInfo struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	RequestId           string                 `protobuf:"bytes,1,opt,name=requestId,proto3" json:"requestId,omitempty"`
+	ResponseDestination *OrchestrationInstance `protobuf:"bytes,2,opt,name=responseDestination,proto3" json:"responseDestination,omitempty"` // null for signals
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *OperationInfo) Reset() {
+	*x = OperationInfo{}
+	mi := &file_orchestrator_service_proto_msgTypes[93]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OperationInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OperationInfo) ProtoMessage() {}
+
+func (x *OperationInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[93]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OperationInfo.ProtoReflect.Descriptor instead.
+func (*OperationInfo) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{93}
+}
+
+func (x *OperationInfo) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *OperationInfo) GetResponseDestination() *OrchestrationInstance {
+	if x != nil {
+		return x.ResponseDestination
+	}
+	return nil
+}
+
 type OperationResultSuccess struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Result        *wrappers.StringValue  `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
+	StartTimeUtc  *timestamp.Timestamp   `protobuf:"bytes,2,opt,name=startTimeUtc,proto3" json:"startTimeUtc,omitempty"`
+	EndTimeUtc    *timestamp.Timestamp   `protobuf:"bytes,3,opt,name=endTimeUtc,proto3" json:"endTimeUtc,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OperationResultSuccess) Reset() {
 	*x = OperationResultSuccess{}
-	mi := &file_orchestrator_service_proto_msgTypes[77]
+	mi := &file_orchestrator_service_proto_msgTypes[94]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5008,7 +6617,7 @@ func (x *OperationResultSuccess) String() string {
 func (*OperationResultSuccess) ProtoMessage() {}
 
 func (x *OperationResultSuccess) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[77]
+	mi := &file_orchestrator_service_proto_msgTypes[94]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5021,7 +6630,7 @@ func (x *OperationResultSuccess) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OperationResultSuccess.ProtoReflect.Descriptor instead.
 func (*OperationResultSuccess) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{77}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{94}
 }
 
 func (x *OperationResultSuccess) GetResult() *wrappers.StringValue {
@@ -5031,16 +6640,32 @@ func (x *OperationResultSuccess) GetResult() *wrappers.StringValue {
 	return nil
 }
 
+func (x *OperationResultSuccess) GetStartTimeUtc() *timestamp.Timestamp {
+	if x != nil {
+		return x.StartTimeUtc
+	}
+	return nil
+}
+
+func (x *OperationResultSuccess) GetEndTimeUtc() *timestamp.Timestamp {
+	if x != nil {
+		return x.EndTimeUtc
+	}
+	return nil
+}
+
 type OperationResultFailure struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	FailureDetails *TaskFailureDetails    `protobuf:"bytes,1,opt,name=failureDetails,proto3" json:"failureDetails,omitempty"`
+	StartTimeUtc   *timestamp.Timestamp   `protobuf:"bytes,2,opt,name=startTimeUtc,proto3" json:"startTimeUtc,omitempty"`
+	EndTimeUtc     *timestamp.Timestamp   `protobuf:"bytes,3,opt,name=endTimeUtc,proto3" json:"endTimeUtc,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
 func (x *OperationResultFailure) Reset() {
 	*x = OperationResultFailure{}
-	mi := &file_orchestrator_service_proto_msgTypes[78]
+	mi := &file_orchestrator_service_proto_msgTypes[95]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5052,7 +6677,7 @@ func (x *OperationResultFailure) String() string {
 func (*OperationResultFailure) ProtoMessage() {}
 
 func (x *OperationResultFailure) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[78]
+	mi := &file_orchestrator_service_proto_msgTypes[95]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5065,12 +6690,26 @@ func (x *OperationResultFailure) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OperationResultFailure.ProtoReflect.Descriptor instead.
 func (*OperationResultFailure) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{78}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{95}
 }
 
 func (x *OperationResultFailure) GetFailureDetails() *TaskFailureDetails {
 	if x != nil {
 		return x.FailureDetails
+	}
+	return nil
+}
+
+func (x *OperationResultFailure) GetStartTimeUtc() *timestamp.Timestamp {
+	if x != nil {
+		return x.StartTimeUtc
+	}
+	return nil
+}
+
+func (x *OperationResultFailure) GetEndTimeUtc() *timestamp.Timestamp {
+	if x != nil {
+		return x.EndTimeUtc
 	}
 	return nil
 }
@@ -5089,7 +6728,7 @@ type OperationAction struct {
 
 func (x *OperationAction) Reset() {
 	*x = OperationAction{}
-	mi := &file_orchestrator_service_proto_msgTypes[79]
+	mi := &file_orchestrator_service_proto_msgTypes[96]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5101,7 +6740,7 @@ func (x *OperationAction) String() string {
 func (*OperationAction) ProtoMessage() {}
 
 func (x *OperationAction) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[79]
+	mi := &file_orchestrator_service_proto_msgTypes[96]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5114,7 +6753,7 @@ func (x *OperationAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OperationAction.ProtoReflect.Descriptor instead.
 func (*OperationAction) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{79}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{96}
 }
 
 func (x *OperationAction) GetId() int32 {
@@ -5166,18 +6805,20 @@ func (*OperationAction_SendSignal) isOperationAction_OperationActionType() {}
 func (*OperationAction_StartNewOrchestration) isOperationAction_OperationActionType() {}
 
 type SendSignalAction struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	InstanceId    string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Input         *wrappers.StringValue  `protobuf:"bytes,3,opt,name=input,proto3" json:"input,omitempty"`
-	ScheduledTime *timestamp.Timestamp   `protobuf:"bytes,4,opt,name=scheduledTime,proto3" json:"scheduledTime,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	InstanceId         string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
+	Name               string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Input              *wrappers.StringValue  `protobuf:"bytes,3,opt,name=input,proto3" json:"input,omitempty"`
+	ScheduledTime      *timestamp.Timestamp   `protobuf:"bytes,4,opt,name=scheduledTime,proto3" json:"scheduledTime,omitempty"`
+	RequestTime        *timestamp.Timestamp   `protobuf:"bytes,5,opt,name=requestTime,proto3" json:"requestTime,omitempty"`
+	ParentTraceContext *TraceContext          `protobuf:"bytes,6,opt,name=parentTraceContext,proto3" json:"parentTraceContext,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *SendSignalAction) Reset() {
 	*x = SendSignalAction{}
-	mi := &file_orchestrator_service_proto_msgTypes[80]
+	mi := &file_orchestrator_service_proto_msgTypes[97]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5189,7 +6830,7 @@ func (x *SendSignalAction) String() string {
 func (*SendSignalAction) ProtoMessage() {}
 
 func (x *SendSignalAction) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[80]
+	mi := &file_orchestrator_service_proto_msgTypes[97]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5202,7 +6843,7 @@ func (x *SendSignalAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendSignalAction.ProtoReflect.Descriptor instead.
 func (*SendSignalAction) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{80}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{97}
 }
 
 func (x *SendSignalAction) GetInstanceId() string {
@@ -5233,20 +6874,36 @@ func (x *SendSignalAction) GetScheduledTime() *timestamp.Timestamp {
 	return nil
 }
 
+func (x *SendSignalAction) GetRequestTime() *timestamp.Timestamp {
+	if x != nil {
+		return x.RequestTime
+	}
+	return nil
+}
+
+func (x *SendSignalAction) GetParentTraceContext() *TraceContext {
+	if x != nil {
+		return x.ParentTraceContext
+	}
+	return nil
+}
+
 type StartNewOrchestrationAction struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	InstanceId    string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Version       *wrappers.StringValue  `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
-	Input         *wrappers.StringValue  `protobuf:"bytes,4,opt,name=input,proto3" json:"input,omitempty"`
-	ScheduledTime *timestamp.Timestamp   `protobuf:"bytes,5,opt,name=scheduledTime,proto3" json:"scheduledTime,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	InstanceId         string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
+	Name               string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Version            *wrappers.StringValue  `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
+	Input              *wrappers.StringValue  `protobuf:"bytes,4,opt,name=input,proto3" json:"input,omitempty"`
+	ScheduledTime      *timestamp.Timestamp   `protobuf:"bytes,5,opt,name=scheduledTime,proto3" json:"scheduledTime,omitempty"`
+	RequestTime        *timestamp.Timestamp   `protobuf:"bytes,6,opt,name=requestTime,proto3" json:"requestTime,omitempty"`
+	ParentTraceContext *TraceContext          `protobuf:"bytes,7,opt,name=parentTraceContext,proto3" json:"parentTraceContext,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *StartNewOrchestrationAction) Reset() {
 	*x = StartNewOrchestrationAction{}
-	mi := &file_orchestrator_service_proto_msgTypes[81]
+	mi := &file_orchestrator_service_proto_msgTypes[98]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5258,7 +6915,7 @@ func (x *StartNewOrchestrationAction) String() string {
 func (*StartNewOrchestrationAction) ProtoMessage() {}
 
 func (x *StartNewOrchestrationAction) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[81]
+	mi := &file_orchestrator_service_proto_msgTypes[98]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5271,7 +6928,7 @@ func (x *StartNewOrchestrationAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartNewOrchestrationAction.ProtoReflect.Descriptor instead.
 func (*StartNewOrchestrationAction) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{81}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{98}
 }
 
 func (x *StartNewOrchestrationAction) GetInstanceId() string {
@@ -5309,15 +6966,372 @@ func (x *StartNewOrchestrationAction) GetScheduledTime() *timestamp.Timestamp {
 	return nil
 }
 
-type GetWorkItemsRequest struct {
+func (x *StartNewOrchestrationAction) GetRequestTime() *timestamp.Timestamp {
+	if x != nil {
+		return x.RequestTime
+	}
+	return nil
+}
+
+func (x *StartNewOrchestrationAction) GetParentTraceContext() *TraceContext {
+	if x != nil {
+		return x.ParentTraceContext
+	}
+	return nil
+}
+
+type AbandonActivityTaskRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	CompletionToken string                 `protobuf:"bytes,1,opt,name=completionToken,proto3" json:"completionToken,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *AbandonActivityTaskRequest) Reset() {
+	*x = AbandonActivityTaskRequest{}
+	mi := &file_orchestrator_service_proto_msgTypes[99]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AbandonActivityTaskRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AbandonActivityTaskRequest) ProtoMessage() {}
+
+func (x *AbandonActivityTaskRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[99]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AbandonActivityTaskRequest.ProtoReflect.Descriptor instead.
+func (*AbandonActivityTaskRequest) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{99}
+}
+
+func (x *AbandonActivityTaskRequest) GetCompletionToken() string {
+	if x != nil {
+		return x.CompletionToken
+	}
+	return ""
+}
+
+type AbandonActivityTaskResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
+func (x *AbandonActivityTaskResponse) Reset() {
+	*x = AbandonActivityTaskResponse{}
+	mi := &file_orchestrator_service_proto_msgTypes[100]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AbandonActivityTaskResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AbandonActivityTaskResponse) ProtoMessage() {}
+
+func (x *AbandonActivityTaskResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[100]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AbandonActivityTaskResponse.ProtoReflect.Descriptor instead.
+func (*AbandonActivityTaskResponse) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{100}
+}
+
+type AbandonOrchestrationTaskRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	CompletionToken string                 `protobuf:"bytes,1,opt,name=completionToken,proto3" json:"completionToken,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *AbandonOrchestrationTaskRequest) Reset() {
+	*x = AbandonOrchestrationTaskRequest{}
+	mi := &file_orchestrator_service_proto_msgTypes[101]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AbandonOrchestrationTaskRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AbandonOrchestrationTaskRequest) ProtoMessage() {}
+
+func (x *AbandonOrchestrationTaskRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[101]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AbandonOrchestrationTaskRequest.ProtoReflect.Descriptor instead.
+func (*AbandonOrchestrationTaskRequest) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{101}
+}
+
+func (x *AbandonOrchestrationTaskRequest) GetCompletionToken() string {
+	if x != nil {
+		return x.CompletionToken
+	}
+	return ""
+}
+
+type AbandonOrchestrationTaskResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AbandonOrchestrationTaskResponse) Reset() {
+	*x = AbandonOrchestrationTaskResponse{}
+	mi := &file_orchestrator_service_proto_msgTypes[102]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AbandonOrchestrationTaskResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AbandonOrchestrationTaskResponse) ProtoMessage() {}
+
+func (x *AbandonOrchestrationTaskResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[102]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AbandonOrchestrationTaskResponse.ProtoReflect.Descriptor instead.
+func (*AbandonOrchestrationTaskResponse) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{102}
+}
+
+type AbandonEntityTaskRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	CompletionToken string                 `protobuf:"bytes,1,opt,name=completionToken,proto3" json:"completionToken,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *AbandonEntityTaskRequest) Reset() {
+	*x = AbandonEntityTaskRequest{}
+	mi := &file_orchestrator_service_proto_msgTypes[103]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AbandonEntityTaskRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AbandonEntityTaskRequest) ProtoMessage() {}
+
+func (x *AbandonEntityTaskRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[103]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AbandonEntityTaskRequest.ProtoReflect.Descriptor instead.
+func (*AbandonEntityTaskRequest) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{103}
+}
+
+func (x *AbandonEntityTaskRequest) GetCompletionToken() string {
+	if x != nil {
+		return x.CompletionToken
+	}
+	return ""
+}
+
+type AbandonEntityTaskResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AbandonEntityTaskResponse) Reset() {
+	*x = AbandonEntityTaskResponse{}
+	mi := &file_orchestrator_service_proto_msgTypes[104]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AbandonEntityTaskResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AbandonEntityTaskResponse) ProtoMessage() {}
+
+func (x *AbandonEntityTaskResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[104]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AbandonEntityTaskResponse.ProtoReflect.Descriptor instead.
+func (*AbandonEntityTaskResponse) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{104}
+}
+
+type SkipGracefulOrchestrationTerminationsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	InstanceBatch *InstanceBatch         `protobuf:"bytes,1,opt,name=instanceBatch,proto3" json:"instanceBatch,omitempty"`
+	Reason        *wrappers.StringValue  `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SkipGracefulOrchestrationTerminationsRequest) Reset() {
+	*x = SkipGracefulOrchestrationTerminationsRequest{}
+	mi := &file_orchestrator_service_proto_msgTypes[105]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SkipGracefulOrchestrationTerminationsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SkipGracefulOrchestrationTerminationsRequest) ProtoMessage() {}
+
+func (x *SkipGracefulOrchestrationTerminationsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[105]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SkipGracefulOrchestrationTerminationsRequest.ProtoReflect.Descriptor instead.
+func (*SkipGracefulOrchestrationTerminationsRequest) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{105}
+}
+
+func (x *SkipGracefulOrchestrationTerminationsRequest) GetInstanceBatch() *InstanceBatch {
+	if x != nil {
+		return x.InstanceBatch
+	}
+	return nil
+}
+
+func (x *SkipGracefulOrchestrationTerminationsRequest) GetReason() *wrappers.StringValue {
+	if x != nil {
+		return x.Reason
+	}
+	return nil
+}
+
+type SkipGracefulOrchestrationTerminationsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Those instances which could not be terminated because they had locked entities at the time of this termination call,
+	// are already in a terminal state (completed, failed, terminated, etc.), are not orchestrations, or do not exist (i.e. have been purged)
+	UnterminatedInstanceIds []string `protobuf:"bytes,1,rep,name=unterminatedInstanceIds,proto3" json:"unterminatedInstanceIds,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *SkipGracefulOrchestrationTerminationsResponse) Reset() {
+	*x = SkipGracefulOrchestrationTerminationsResponse{}
+	mi := &file_orchestrator_service_proto_msgTypes[106]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SkipGracefulOrchestrationTerminationsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SkipGracefulOrchestrationTerminationsResponse) ProtoMessage() {}
+
+func (x *SkipGracefulOrchestrationTerminationsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[106]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SkipGracefulOrchestrationTerminationsResponse.ProtoReflect.Descriptor instead.
+func (*SkipGracefulOrchestrationTerminationsResponse) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{106}
+}
+
+func (x *SkipGracefulOrchestrationTerminationsResponse) GetUnterminatedInstanceIds() []string {
+	if x != nil {
+		return x.UnterminatedInstanceIds
+	}
+	return nil
+}
+
+type GetWorkItemsRequest struct {
+	state                               protoimpl.MessageState `protogen:"open.v1"`
+	MaxConcurrentOrchestrationWorkItems int32                  `protobuf:"varint,1,opt,name=maxConcurrentOrchestrationWorkItems,proto3" json:"maxConcurrentOrchestrationWorkItems,omitempty"`
+	MaxConcurrentActivityWorkItems      int32                  `protobuf:"varint,2,opt,name=maxConcurrentActivityWorkItems,proto3" json:"maxConcurrentActivityWorkItems,omitempty"`
+	MaxConcurrentEntityWorkItems        int32                  `protobuf:"varint,3,opt,name=maxConcurrentEntityWorkItems,proto3" json:"maxConcurrentEntityWorkItems,omitempty"`
+	Capabilities                        []WorkerCapability     `protobuf:"varint,10,rep,packed,name=capabilities,proto3,enum=WorkerCapability" json:"capabilities,omitempty"`
+	WorkItemFilters                     *WorkItemFilters       `protobuf:"bytes,11,opt,name=workItemFilters,proto3" json:"workItemFilters,omitempty"`
+	unknownFields                       protoimpl.UnknownFields
+	sizeCache                           protoimpl.SizeCache
+}
+
 func (x *GetWorkItemsRequest) Reset() {
 	*x = GetWorkItemsRequest{}
-	mi := &file_orchestrator_service_proto_msgTypes[82]
+	mi := &file_orchestrator_service_proto_msgTypes[107]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5329,7 +7343,7 @@ func (x *GetWorkItemsRequest) String() string {
 func (*GetWorkItemsRequest) ProtoMessage() {}
 
 func (x *GetWorkItemsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[82]
+	mi := &file_orchestrator_service_proto_msgTypes[107]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5342,7 +7356,250 @@ func (x *GetWorkItemsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWorkItemsRequest.ProtoReflect.Descriptor instead.
 func (*GetWorkItemsRequest) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{82}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{107}
+}
+
+func (x *GetWorkItemsRequest) GetMaxConcurrentOrchestrationWorkItems() int32 {
+	if x != nil {
+		return x.MaxConcurrentOrchestrationWorkItems
+	}
+	return 0
+}
+
+func (x *GetWorkItemsRequest) GetMaxConcurrentActivityWorkItems() int32 {
+	if x != nil {
+		return x.MaxConcurrentActivityWorkItems
+	}
+	return 0
+}
+
+func (x *GetWorkItemsRequest) GetMaxConcurrentEntityWorkItems() int32 {
+	if x != nil {
+		return x.MaxConcurrentEntityWorkItems
+	}
+	return 0
+}
+
+func (x *GetWorkItemsRequest) GetCapabilities() []WorkerCapability {
+	if x != nil {
+		return x.Capabilities
+	}
+	return nil
+}
+
+func (x *GetWorkItemsRequest) GetWorkItemFilters() *WorkItemFilters {
+	if x != nil {
+		return x.WorkItemFilters
+	}
+	return nil
+}
+
+type WorkItemFilters struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Orchestrations []*OrchestrationFilter `protobuf:"bytes,1,rep,name=orchestrations,proto3" json:"orchestrations,omitempty"`
+	Activities     []*ActivityFilter      `protobuf:"bytes,2,rep,name=activities,proto3" json:"activities,omitempty"`
+	Entities       []*EntityFilter        `protobuf:"bytes,3,rep,name=entities,proto3" json:"entities,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *WorkItemFilters) Reset() {
+	*x = WorkItemFilters{}
+	mi := &file_orchestrator_service_proto_msgTypes[108]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WorkItemFilters) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WorkItemFilters) ProtoMessage() {}
+
+func (x *WorkItemFilters) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[108]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WorkItemFilters.ProtoReflect.Descriptor instead.
+func (*WorkItemFilters) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{108}
+}
+
+func (x *WorkItemFilters) GetOrchestrations() []*OrchestrationFilter {
+	if x != nil {
+		return x.Orchestrations
+	}
+	return nil
+}
+
+func (x *WorkItemFilters) GetActivities() []*ActivityFilter {
+	if x != nil {
+		return x.Activities
+	}
+	return nil
+}
+
+func (x *WorkItemFilters) GetEntities() []*EntityFilter {
+	if x != nil {
+		return x.Entities
+	}
+	return nil
+}
+
+type OrchestrationFilter struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Versions      []string               `protobuf:"bytes,2,rep,name=versions,proto3" json:"versions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OrchestrationFilter) Reset() {
+	*x = OrchestrationFilter{}
+	mi := &file_orchestrator_service_proto_msgTypes[109]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OrchestrationFilter) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OrchestrationFilter) ProtoMessage() {}
+
+func (x *OrchestrationFilter) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[109]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OrchestrationFilter.ProtoReflect.Descriptor instead.
+func (*OrchestrationFilter) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{109}
+}
+
+func (x *OrchestrationFilter) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *OrchestrationFilter) GetVersions() []string {
+	if x != nil {
+		return x.Versions
+	}
+	return nil
+}
+
+type ActivityFilter struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Versions      []string               `protobuf:"bytes,2,rep,name=versions,proto3" json:"versions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ActivityFilter) Reset() {
+	*x = ActivityFilter{}
+	mi := &file_orchestrator_service_proto_msgTypes[110]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ActivityFilter) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ActivityFilter) ProtoMessage() {}
+
+func (x *ActivityFilter) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[110]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ActivityFilter.ProtoReflect.Descriptor instead.
+func (*ActivityFilter) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{110}
+}
+
+func (x *ActivityFilter) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ActivityFilter) GetVersions() []string {
+	if x != nil {
+		return x.Versions
+	}
+	return nil
+}
+
+type EntityFilter struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EntityFilter) Reset() {
+	*x = EntityFilter{}
+	mi := &file_orchestrator_service_proto_msgTypes[111]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EntityFilter) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EntityFilter) ProtoMessage() {}
+
+func (x *EntityFilter) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[111]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EntityFilter.ProtoReflect.Descriptor instead.
+func (*EntityFilter) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{111}
+}
+
+func (x *EntityFilter) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
 }
 
 type WorkItem struct {
@@ -5352,14 +7609,17 @@ type WorkItem struct {
 	//	*WorkItem_OrchestratorRequest
 	//	*WorkItem_ActivityRequest
 	//	*WorkItem_EntityRequest
-	Request       isWorkItem_Request `protobuf_oneof:"request"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	//	*WorkItem_HealthPing
+	//	*WorkItem_EntityRequestV2
+	Request         isWorkItem_Request `protobuf_oneof:"request"`
+	CompletionToken string             `protobuf:"bytes,10,opt,name=completionToken,proto3" json:"completionToken,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *WorkItem) Reset() {
 	*x = WorkItem{}
-	mi := &file_orchestrator_service_proto_msgTypes[83]
+	mi := &file_orchestrator_service_proto_msgTypes[112]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5371,7 +7631,7 @@ func (x *WorkItem) String() string {
 func (*WorkItem) ProtoMessage() {}
 
 func (x *WorkItem) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[83]
+	mi := &file_orchestrator_service_proto_msgTypes[112]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5384,7 +7644,7 @@ func (x *WorkItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkItem.ProtoReflect.Descriptor instead.
 func (*WorkItem) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{83}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{112}
 }
 
 func (x *WorkItem) GetRequest() isWorkItem_Request {
@@ -5421,6 +7681,31 @@ func (x *WorkItem) GetEntityRequest() *EntityBatchRequest {
 	return nil
 }
 
+func (x *WorkItem) GetHealthPing() *HealthPing {
+	if x != nil {
+		if x, ok := x.Request.(*WorkItem_HealthPing); ok {
+			return x.HealthPing
+		}
+	}
+	return nil
+}
+
+func (x *WorkItem) GetEntityRequestV2() *EntityRequest {
+	if x != nil {
+		if x, ok := x.Request.(*WorkItem_EntityRequestV2); ok {
+			return x.EntityRequestV2
+		}
+	}
+	return nil
+}
+
+func (x *WorkItem) GetCompletionToken() string {
+	if x != nil {
+		return x.CompletionToken
+	}
+	return ""
+}
+
 type isWorkItem_Request interface {
 	isWorkItem_Request()
 }
@@ -5434,7 +7719,15 @@ type WorkItem_ActivityRequest struct {
 }
 
 type WorkItem_EntityRequest struct {
-	EntityRequest *EntityBatchRequest `protobuf:"bytes,3,opt,name=entityRequest,proto3,oneof"`
+	EntityRequest *EntityBatchRequest `protobuf:"bytes,3,opt,name=entityRequest,proto3,oneof"` // (older) used by orchestration services implementations
+}
+
+type WorkItem_HealthPing struct {
+	HealthPing *HealthPing `protobuf:"bytes,4,opt,name=healthPing,proto3,oneof"`
+}
+
+type WorkItem_EntityRequestV2 struct {
+	EntityRequestV2 *EntityRequest `protobuf:"bytes,5,opt,name=entityRequestV2,proto3,oneof"` // (newer) used by backend service implementations
 }
 
 func (*WorkItem_OrchestratorRequest) isWorkItem_Request() {}
@@ -5442,6 +7735,10 @@ func (*WorkItem_OrchestratorRequest) isWorkItem_Request() {}
 func (*WorkItem_ActivityRequest) isWorkItem_Request() {}
 
 func (*WorkItem_EntityRequest) isWorkItem_Request() {}
+
+func (*WorkItem_HealthPing) isWorkItem_Request() {}
+
+func (*WorkItem_EntityRequestV2) isWorkItem_Request() {}
 
 type CompleteTaskResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -5451,7 +7748,7 @@ type CompleteTaskResponse struct {
 
 func (x *CompleteTaskResponse) Reset() {
 	*x = CompleteTaskResponse{}
-	mi := &file_orchestrator_service_proto_msgTypes[84]
+	mi := &file_orchestrator_service_proto_msgTypes[113]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5463,7 +7760,7 @@ func (x *CompleteTaskResponse) String() string {
 func (*CompleteTaskResponse) ProtoMessage() {}
 
 func (x *CompleteTaskResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchestrator_service_proto_msgTypes[84]
+	mi := &file_orchestrator_service_proto_msgTypes[113]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5476,32 +7773,224 @@ func (x *CompleteTaskResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompleteTaskResponse.ProtoReflect.Descriptor instead.
 func (*CompleteTaskResponse) Descriptor() ([]byte, []int) {
-	return file_orchestrator_service_proto_rawDescGZIP(), []int{84}
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{113}
+}
+
+type HealthPing struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HealthPing) Reset() {
+	*x = HealthPing{}
+	mi := &file_orchestrator_service_proto_msgTypes[114]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HealthPing) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HealthPing) ProtoMessage() {}
+
+func (x *HealthPing) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[114]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HealthPing.ProtoReflect.Descriptor instead.
+func (*HealthPing) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{114}
+}
+
+type StreamInstanceHistoryRequest struct {
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	InstanceId  string                 `protobuf:"bytes,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
+	ExecutionId *wrappers.StringValue  `protobuf:"bytes,2,opt,name=executionId,proto3" json:"executionId,omitempty"`
+	// When set to true, the service may return a more optimized response suitable for workers.
+	ForWorkItemProcessing bool `protobuf:"varint,3,opt,name=forWorkItemProcessing,proto3" json:"forWorkItemProcessing,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *StreamInstanceHistoryRequest) Reset() {
+	*x = StreamInstanceHistoryRequest{}
+	mi := &file_orchestrator_service_proto_msgTypes[115]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StreamInstanceHistoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StreamInstanceHistoryRequest) ProtoMessage() {}
+
+func (x *StreamInstanceHistoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[115]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StreamInstanceHistoryRequest.ProtoReflect.Descriptor instead.
+func (*StreamInstanceHistoryRequest) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{115}
+}
+
+func (x *StreamInstanceHistoryRequest) GetInstanceId() string {
+	if x != nil {
+		return x.InstanceId
+	}
+	return ""
+}
+
+func (x *StreamInstanceHistoryRequest) GetExecutionId() *wrappers.StringValue {
+	if x != nil {
+		return x.ExecutionId
+	}
+	return nil
+}
+
+func (x *StreamInstanceHistoryRequest) GetForWorkItemProcessing() bool {
+	if x != nil {
+		return x.ForWorkItemProcessing
+	}
+	return false
+}
+
+type HistoryChunk struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Events        []*HistoryEvent        `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HistoryChunk) Reset() {
+	*x = HistoryChunk{}
+	mi := &file_orchestrator_service_proto_msgTypes[116]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HistoryChunk) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HistoryChunk) ProtoMessage() {}
+
+func (x *HistoryChunk) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[116]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HistoryChunk.ProtoReflect.Descriptor instead.
+func (*HistoryChunk) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{116}
+}
+
+func (x *HistoryChunk) GetEvents() []*HistoryEvent {
+	if x != nil {
+		return x.Events
+	}
+	return nil
+}
+
+type InstanceBatch struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// A maximum of 500 instance IDs can be provided in this list.
+	InstanceIds   []string `protobuf:"bytes,1,rep,name=instanceIds,proto3" json:"instanceIds,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InstanceBatch) Reset() {
+	*x = InstanceBatch{}
+	mi := &file_orchestrator_service_proto_msgTypes[117]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InstanceBatch) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InstanceBatch) ProtoMessage() {}
+
+func (x *InstanceBatch) ProtoReflect() protoreflect.Message {
+	mi := &file_orchestrator_service_proto_msgTypes[117]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InstanceBatch.ProtoReflect.Descriptor instead.
+func (*InstanceBatch) Descriptor() ([]byte, []int) {
+	return file_orchestrator_service_proto_rawDescGZIP(), []int{117}
+}
+
+func (x *InstanceBatch) GetInstanceIds() []string {
+	if x != nil {
+		return x.InstanceIds
+	}
+	return nil
 }
 
 var File_orchestrator_service_proto protoreflect.FileDescriptor
 
 const file_orchestrator_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1aorchestrator_service.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x1bgoogle/protobuf/empty.proto\"w\n" +
+	"\x1aorchestrator_service.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1cgoogle/protobuf/struct.proto\"w\n" +
 	"\x15OrchestrationInstance\x12\x1e\n" +
 	"\n" +
 	"instanceId\x18\x01 \x01(\tR\n" +
 	"instanceId\x12>\n" +
-	"\vexecutionId\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\vexecutionId\"\xf7\x01\n" +
+	"\vexecutionId\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\vexecutionId\"\x9f\x03\n" +
 	"\x0fActivityRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x126\n" +
 	"\aversion\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\aversion\x122\n" +
 	"\x05input\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\x05input\x12L\n" +
 	"\x15orchestrationInstance\x18\x04 \x01(\v2\x16.OrchestrationInstanceR\x15orchestrationInstance\x12\x16\n" +
-	"\x06taskId\x18\x05 \x01(\x05R\x06taskId\"\xbd\x01\n" +
+	"\x06taskId\x18\x05 \x01(\x05R\x06taskId\x12=\n" +
+	"\x12parentTraceContext\x18\x06 \x01(\v2\r.TraceContextR\x12parentTraceContext\x12.\n" +
+	"\x04tags\x18\a \x03(\v2\x1a.ActivityRequest.TagsEntryR\x04tags\x1a7\n" +
+	"\tTagsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe7\x01\n" +
 	"\x10ActivityResponse\x12\x1e\n" +
 	"\n" +
 	"instanceId\x18\x01 \x01(\tR\n" +
 	"instanceId\x12\x16\n" +
 	"\x06taskId\x18\x02 \x01(\x05R\x06taskId\x124\n" +
 	"\x06result\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\x06result\x12;\n" +
-	"\x0efailureDetails\x18\x04 \x01(\v2\x13.TaskFailureDetailsR\x0efailureDetails\"\xf5\x01\n" +
+	"\x0efailureDetails\x18\x04 \x01(\v2\x13.TaskFailureDetailsR\x0efailureDetails\x12(\n" +
+	"\x0fcompletionToken\x18\x05 \x01(\tR\x0fcompletionToken\"\x91\x03\n" +
 	"\x12TaskFailureDetails\x12\x1c\n" +
 	"\terrorType\x18\x01 \x01(\tR\terrorType\x12\"\n" +
 	"\ferrorMessage\x18\x02 \x01(\tR\ferrorMessage\x12<\n" +
@@ -5509,7 +7998,13 @@ const file_orchestrator_service_proto_rawDesc = "" +
 	"stackTrace\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\n" +
 	"stackTrace\x127\n" +
 	"\finnerFailure\x18\x04 \x01(\v2\x13.TaskFailureDetailsR\finnerFailure\x12&\n" +
-	"\x0eisNonRetriable\x18\x05 \x01(\bR\x0eisNonRetriable\"\xf6\x01\n" +
+	"\x0eisNonRetriable\x18\x05 \x01(\bR\x0eisNonRetriable\x12C\n" +
+	"\n" +
+	"properties\x18\x06 \x03(\v2#.TaskFailureDetails.PropertiesEntryR\n" +
+	"properties\x1aU\n" +
+	"\x0fPropertiesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12,\n" +
+	"\x05value\x18\x02 \x01(\v2\x16.google.protobuf.ValueR\x05value:\x028\x01\"\xf6\x01\n" +
 	"\x12ParentInstanceInfo\x12(\n" +
 	"\x0ftaskScheduledId\x18\x01 \x01(\x05R\x0ftaskScheduledId\x120\n" +
 	"\x04name\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\x04name\x126\n" +
@@ -5520,7 +8015,7 @@ const file_orchestrator_service_proto_rawDesc = "" +
 	"\x06spanID\x18\x02 \x01(\tB\x02\x18\x01R\x06spanID\x12<\n" +
 	"\n" +
 	"traceState\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\n" +
-	"traceState\"\x87\x04\n" +
+	"traceState\"\xf6\x04\n" +
 	"\x15ExecutionStartedEvent\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x126\n" +
 	"\aversion\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\aversion\x122\n" +
@@ -5529,25 +8024,33 @@ const file_orchestrator_service_proto_rawDesc = "" +
 	"\x0eparentInstance\x18\x05 \x01(\v2\x13.ParentInstanceInfoR\x0eparentInstance\x12T\n" +
 	"\x17scheduledStartTimestamp\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\x17scheduledStartTimestamp\x12=\n" +
 	"\x12parentTraceContext\x18\a \x01(\v2\r.TraceContextR\x12parentTraceContext\x12N\n" +
-	"\x13orchestrationSpanID\x18\b \x01(\v2\x1c.google.protobuf.StringValueR\x13orchestrationSpanID\"\xd4\x01\n" +
+	"\x13orchestrationSpanID\x18\b \x01(\v2\x1c.google.protobuf.StringValueR\x13orchestrationSpanID\x124\n" +
+	"\x04tags\x18\t \x03(\v2 .ExecutionStartedEvent.TagsEntryR\x04tags\x1a7\n" +
+	"\tTagsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd4\x01\n" +
 	"\x17ExecutionCompletedEvent\x12F\n" +
 	"\x13orchestrationStatus\x18\x01 \x01(\x0e2\x14.OrchestrationStatusR\x13orchestrationStatus\x124\n" +
 	"\x06result\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\x06result\x12;\n" +
 	"\x0efailureDetails\x18\x03 \x01(\v2\x13.TaskFailureDetailsR\x0efailureDetails\"h\n" +
 	"\x18ExecutionTerminatedEvent\x122\n" +
 	"\x05input\x18\x01 \x01(\v2\x1c.google.protobuf.StringValueR\x05input\x12\x18\n" +
-	"\arecurse\x18\x02 \x01(\bR\arecurse\"\xd3\x01\n" +
+	"\arecurse\x18\x02 \x01(\bR\arecurse\"\xbf\x02\n" +
 	"\x12TaskScheduledEvent\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x126\n" +
 	"\aversion\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\aversion\x122\n" +
 	"\x05input\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\x05input\x12=\n" +
-	"\x12parentTraceContext\x18\x04 \x01(\v2\r.TraceContextR\x12parentTraceContext\"t\n" +
+	"\x12parentTraceContext\x18\x04 \x01(\v2\r.TraceContextR\x12parentTraceContext\x121\n" +
+	"\x04tags\x18\x05 \x03(\v2\x1d.TaskScheduledEvent.TagsEntryR\x04tags\x1a7\n" +
+	"\tTagsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"t\n" +
 	"\x12TaskCompletedEvent\x12(\n" +
 	"\x0ftaskScheduledId\x18\x01 \x01(\x05R\x0ftaskScheduledId\x124\n" +
 	"\x06result\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\x06result\"x\n" +
 	"\x0fTaskFailedEvent\x12(\n" +
 	"\x0ftaskScheduledId\x18\x01 \x01(\x05R\x0ftaskScheduledId\x12;\n" +
-	"\x0efailureDetails\x18\x02 \x01(\v2\x13.TaskFailureDetailsR\x0efailureDetails\"\x85\x02\n" +
+	"\x0efailureDetails\x18\x02 \x01(\v2\x13.TaskFailureDetailsR\x0efailureDetails\"\x83\x03\n" +
 	"$SubOrchestrationInstanceCreatedEvent\x12\x1e\n" +
 	"\n" +
 	"instanceId\x18\x01 \x01(\tR\n" +
@@ -5555,7 +8058,11 @@ const file_orchestrator_service_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x126\n" +
 	"\aversion\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\aversion\x122\n" +
 	"\x05input\x18\x04 \x01(\v2\x1c.google.protobuf.StringValueR\x05input\x12=\n" +
-	"\x12parentTraceContext\x18\x05 \x01(\v2\r.TraceContextR\x12parentTraceContext\"\x88\x01\n" +
+	"\x12parentTraceContext\x18\x05 \x01(\v2\r.TraceContextR\x12parentTraceContext\x12C\n" +
+	"\x04tags\x18\x06 \x03(\v2/.SubOrchestrationInstanceCreatedEvent.TagsEntryR\x04tags\x1a7\n" +
+	"\tTagsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x88\x01\n" +
 	"&SubOrchestrationInstanceCompletedEvent\x12(\n" +
 	"\x0ftaskScheduledId\x18\x01 \x01(\x05R\x0ftaskScheduledId\x124\n" +
 	"\x06result\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\x06result\"\x8c\x01\n" +
@@ -5587,7 +8094,53 @@ const file_orchestrator_service_proto_rawDesc = "" +
 	"\x17ExecutionSuspendedEvent\x122\n" +
 	"\x05input\x18\x01 \x01(\v2\x1c.google.protobuf.StringValueR\x05input\"K\n" +
 	"\x15ExecutionResumedEvent\x122\n" +
-	"\x05input\x18\x01 \x01(\v2\x1c.google.protobuf.StringValueR\x05input\"\x92\f\n" +
+	"\x05input\x18\x01 \x01(\v2\x1c.google.protobuf.StringValueR\x05input\"\x9a\x02\n" +
+	"\x1cEntityOperationSignaledEvent\x12\x1c\n" +
+	"\trequestId\x18\x01 \x01(\tR\trequestId\x12\x1c\n" +
+	"\toperation\x18\x02 \x01(\tR\toperation\x12@\n" +
+	"\rscheduledTime\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\rscheduledTime\x122\n" +
+	"\x05input\x18\x04 \x01(\v2\x1c.google.protobuf.StringValueR\x05input\x12H\n" +
+	"\x10targetInstanceId\x18\x05 \x01(\v2\x1c.google.protobuf.StringValueR\x10targetInstanceId\"\xae\x03\n" +
+	"\x1aEntityOperationCalledEvent\x12\x1c\n" +
+	"\trequestId\x18\x01 \x01(\tR\trequestId\x12\x1c\n" +
+	"\toperation\x18\x02 \x01(\tR\toperation\x12@\n" +
+	"\rscheduledTime\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\rscheduledTime\x122\n" +
+	"\x05input\x18\x04 \x01(\v2\x1c.google.protobuf.StringValueR\x05input\x12H\n" +
+	"\x10parentInstanceId\x18\x05 \x01(\v2\x1c.google.protobuf.StringValueR\x10parentInstanceId\x12J\n" +
+	"\x11parentExecutionId\x18\x06 \x01(\v2\x1c.google.protobuf.StringValueR\x11parentExecutionId\x12H\n" +
+	"\x10targetInstanceId\x18\a \x01(\v2\x1c.google.protobuf.StringValueR\x10targetInstanceId\"\xc8\x01\n" +
+	"\x18EntityLockRequestedEvent\x12,\n" +
+	"\x11criticalSectionId\x18\x01 \x01(\tR\x11criticalSectionId\x12\x18\n" +
+	"\alockSet\x18\x02 \x03(\tR\alockSet\x12\x1a\n" +
+	"\bposition\x18\x03 \x01(\x05R\bposition\x12H\n" +
+	"\x10parentInstanceId\x18\x04 \x01(\v2\x1c.google.protobuf.StringValueR\x10parentInstanceId\"s\n" +
+	"\x1dEntityOperationCompletedEvent\x12\x1c\n" +
+	"\trequestId\x18\x01 \x01(\tR\trequestId\x124\n" +
+	"\x06output\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\x06output\"w\n" +
+	"\x1aEntityOperationFailedEvent\x12\x1c\n" +
+	"\trequestId\x18\x01 \x01(\tR\trequestId\x12;\n" +
+	"\x0efailureDetails\x18\x02 \x01(\v2\x13.TaskFailureDetailsR\x0efailureDetails\"\xd9\x01\n" +
+	"\x15EntityUnlockSentEvent\x12,\n" +
+	"\x11criticalSectionId\x18\x01 \x01(\tR\x11criticalSectionId\x12H\n" +
+	"\x10parentInstanceId\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\x10parentInstanceId\x12H\n" +
+	"\x10targetInstanceId\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\x10targetInstanceId\"F\n" +
+	"\x16EntityLockGrantedEvent\x12,\n" +
+	"\x11criticalSectionId\x18\x01 \x01(\tR\x11criticalSectionId\"\xe0\x04\n" +
+	"\x15ExecutionRewoundEvent\x124\n" +
+	"\x06reason\x18\x01 \x01(\v2\x1c.google.protobuf.StringValueR\x06reason\x12J\n" +
+	"\x11parentExecutionId\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\x11parentExecutionId\x12<\n" +
+	"\n" +
+	"instanceId\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\n" +
+	"instanceId\x12=\n" +
+	"\x12parentTraceContext\x18\x04 \x01(\v2\r.TraceContextR\x12parentTraceContext\x120\n" +
+	"\x04name\x18\x05 \x01(\v2\x1c.google.protobuf.StringValueR\x04name\x126\n" +
+	"\aversion\x18\x06 \x01(\v2\x1c.google.protobuf.StringValueR\aversion\x122\n" +
+	"\x05input\x18\a \x01(\v2\x1c.google.protobuf.StringValueR\x05input\x12;\n" +
+	"\x0eparentInstance\x18\b \x01(\v2\x13.ParentInstanceInfoR\x0eparentInstance\x124\n" +
+	"\x04tags\x18\t \x03(\v2 .ExecutionRewoundEvent.TagsEntryR\x04tags\x1a7\n" +
+	"\tTagsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x99\x11\n" +
 	"\fHistoryEvent\x12\x18\n" +
 	"\aeventId\x18\x01 \x01(\x05R\aeventId\x128\n" +
 	"\ttimestamp\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12D\n" +
@@ -5615,25 +8168,43 @@ const file_orchestrator_service_proto_rawDesc = "" +
 	"\fhistoryState\x18\x13 \x01(\v2\x12.HistoryStateEventH\x00R\fhistoryState\x12;\n" +
 	"\rcontinueAsNew\x18\x14 \x01(\v2\x13.ContinueAsNewEventH\x00R\rcontinueAsNew\x12J\n" +
 	"\x12executionSuspended\x18\x15 \x01(\v2\x18.ExecutionSuspendedEventH\x00R\x12executionSuspended\x12D\n" +
-	"\x10executionResumed\x18\x16 \x01(\v2\x16.ExecutionResumedEventH\x00R\x10executionResumedB\v\n" +
-	"\teventType\"\x94\x01\n" +
+	"\x10executionResumed\x18\x16 \x01(\v2\x16.ExecutionResumedEventH\x00R\x10executionResumed\x12Y\n" +
+	"\x17entityOperationSignaled\x18\x17 \x01(\v2\x1d.EntityOperationSignaledEventH\x00R\x17entityOperationSignaled\x12S\n" +
+	"\x15entityOperationCalled\x18\x18 \x01(\v2\x1b.EntityOperationCalledEventH\x00R\x15entityOperationCalled\x12\\\n" +
+	"\x18entityOperationCompleted\x18\x19 \x01(\v2\x1e.EntityOperationCompletedEventH\x00R\x18entityOperationCompleted\x12S\n" +
+	"\x15entityOperationFailed\x18\x1a \x01(\v2\x1b.EntityOperationFailedEventH\x00R\x15entityOperationFailed\x12M\n" +
+	"\x13entityLockRequested\x18\x1b \x01(\v2\x19.EntityLockRequestedEventH\x00R\x13entityLockRequested\x12G\n" +
+	"\x11entityLockGranted\x18\x1c \x01(\v2\x17.EntityLockGrantedEventH\x00R\x11entityLockGranted\x12D\n" +
+	"\x10entityUnlockSent\x18\x1d \x01(\v2\x16.EntityUnlockSentEventH\x00R\x10entityUnlockSent\x12D\n" +
+	"\x10executionRewound\x18\x1e \x01(\v2\x16.ExecutionRewoundEventH\x00R\x10executionRewoundB\v\n" +
+	"\teventType\"\xbf\x02\n" +
 	"\x12ScheduleTaskAction\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x126\n" +
 	"\aversion\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\aversion\x122\n" +
-	"\x05input\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\x05input\"\xbe\x01\n" +
+	"\x05input\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\x05input\x121\n" +
+	"\x04tags\x18\x04 \x03(\v2\x1d.ScheduleTaskAction.TagsEntryR\x04tags\x12=\n" +
+	"\x12parentTraceContext\x18\x05 \x01(\v2\r.TraceContextR\x12parentTraceContext\x1a7\n" +
+	"\tTagsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf3\x02\n" +
 	"\x1cCreateSubOrchestrationAction\x12\x1e\n" +
 	"\n" +
 	"instanceId\x18\x01 \x01(\tR\n" +
 	"instanceId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x126\n" +
 	"\aversion\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\aversion\x122\n" +
-	"\x05input\x18\x04 \x01(\v2\x1c.google.protobuf.StringValueR\x05input\"G\n" +
+	"\x05input\x18\x04 \x01(\v2\x1c.google.protobuf.StringValueR\x05input\x12=\n" +
+	"\x12parentTraceContext\x18\x05 \x01(\v2\r.TraceContextR\x12parentTraceContext\x12;\n" +
+	"\x04tags\x18\x06 \x03(\v2'.CreateSubOrchestrationAction.TagsEntryR\x04tags\x1a7\n" +
+	"\tTagsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"G\n" +
 	"\x11CreateTimerAction\x122\n" +
 	"\x06fireAt\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x06fireAt\"\x8b\x01\n" +
 	"\x0fSendEventAction\x122\n" +
 	"\binstance\x18\x01 \x01(\v2\x16.OrchestrationInstanceR\binstance\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x120\n" +
-	"\x04data\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\x04data\"\x87\x03\n" +
+	"\x04data\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\x04data\"\xfc\x03\n" +
 	"\x1bCompleteOrchestrationAction\x12F\n" +
 	"\x13orchestrationStatus\x18\x01 \x01(\x0e2\x14.OrchestrationStatusR\x13orchestrationStatus\x124\n" +
 	"\x06result\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\x06result\x126\n" +
@@ -5642,13 +8213,27 @@ const file_orchestrator_service_proto_rawDesc = "" +
 	"newVersion\x18\x04 \x01(\v2\x1c.google.protobuf.StringValueR\n" +
 	"newVersion\x127\n" +
 	"\x0fcarryoverEvents\x18\x05 \x03(\v2\r.HistoryEventR\x0fcarryoverEvents\x12;\n" +
-	"\x0efailureDetails\x18\x06 \x01(\v2\x13.TaskFailureDetailsR\x0efailureDetails\"\x8e\x01\n" +
+	"\x0efailureDetails\x18\x06 \x01(\v2\x13.TaskFailureDetailsR\x0efailureDetails\x12:\n" +
+	"\x04tags\x18\a \x03(\v2&.CompleteOrchestrationAction.TagsEntryR\x04tags\x1a7\n" +
+	"\tTagsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8e\x01\n" +
 	"\x1cTerminateOrchestrationAction\x12\x1e\n" +
 	"\n" +
 	"instanceId\x18\x01 \x01(\tR\n" +
 	"instanceId\x124\n" +
 	"\x06reason\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\x06reason\x12\x18\n" +
-	"\arecurse\x18\x03 \x01(\bR\arecurse\"\xeb\x03\n" +
+	"\arecurse\x18\x03 \x01(\bR\arecurse\"\xf3\x02\n" +
+	"\x17SendEntityMessageAction\x12Y\n" +
+	"\x17entityOperationSignaled\x18\x01 \x01(\v2\x1d.EntityOperationSignaledEventH\x00R\x17entityOperationSignaled\x12S\n" +
+	"\x15entityOperationCalled\x18\x02 \x01(\v2\x1b.EntityOperationCalledEventH\x00R\x15entityOperationCalled\x12M\n" +
+	"\x13entityLockRequested\x18\x03 \x01(\v2\x19.EntityLockRequestedEventH\x00R\x13entityLockRequested\x12D\n" +
+	"\x10entityUnlockSent\x18\x04 \x01(\v2\x16.EntityUnlockSentEventH\x00R\x10entityUnlockSentB\x13\n" +
+	"\x11EntityMessageType\"J\n" +
+	"\x19RewindOrchestrationAction\x12-\n" +
+	"\n" +
+	"newHistory\x18\x01 \x03(\v2\r.HistoryEventR\n" +
+	"newHistory\"\x85\x05\n" +
 	"\x12OrchestratorAction\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x129\n" +
 	"\fscheduleTask\x18\x02 \x01(\v2\x13.ScheduleTaskActionH\x00R\fscheduleTask\x12W\n" +
@@ -5656,8 +8241,13 @@ const file_orchestrator_service_proto_rawDesc = "" +
 	"\vcreateTimer\x18\x04 \x01(\v2\x12.CreateTimerActionH\x00R\vcreateTimer\x120\n" +
 	"\tsendEvent\x18\x05 \x01(\v2\x10.SendEventActionH\x00R\tsendEvent\x12T\n" +
 	"\x15completeOrchestration\x18\x06 \x01(\v2\x1c.CompleteOrchestrationActionH\x00R\x15completeOrchestration\x12W\n" +
-	"\x16terminateOrchestration\x18\a \x01(\v2\x1d.TerminateOrchestrationActionH\x00R\x16terminateOrchestrationB\x18\n" +
-	"\x16orchestratorActionType\"\x9c\x02\n" +
+	"\x16terminateOrchestration\x18\a \x01(\v2\x1d.TerminateOrchestrationActionH\x00R\x16terminateOrchestration\x12H\n" +
+	"\x11sendEntityMessage\x18\b \x01(\v2\x18.SendEntityMessageActionH\x00R\x11sendEntityMessage\x12N\n" +
+	"\x13rewindOrchestration\x18\t \x01(\v2\x1a.RewindOrchestrationActionH\x00R\x13rewindOrchestrationB\x18\n" +
+	"\x16orchestratorActionType\"\x93\x01\n" +
+	"\x19OrchestrationTraceContext\x124\n" +
+	"\x06spanID\x18\x01 \x01(\v2\x1c.google.protobuf.StringValueR\x06spanID\x12@\n" +
+	"\rspanStartTime\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\rspanStartTime\"\xcf\x04\n" +
 	"\x13OrchestratorRequest\x12\x1e\n" +
 	"\n" +
 	"instanceId\x18\x01 \x01(\tR\n" +
@@ -5667,13 +8257,29 @@ const file_orchestrator_service_proto_rawDesc = "" +
 	"pastEvents\x18\x03 \x03(\v2\r.HistoryEventR\n" +
 	"pastEvents\x12+\n" +
 	"\tnewEvents\x18\x04 \x03(\v2\r.HistoryEventR\tnewEvents\x12I\n" +
-	"\x10entityParameters\x18\x05 \x01(\v2\x1d.OrchestratorEntityParametersR\x10entityParameters\"\xa7\x01\n" +
+	"\x10entityParameters\x18\x05 \x01(\v2\x1d.OrchestratorEntityParametersR\x10entityParameters\x12:\n" +
+	"\x18requiresHistoryStreaming\x18\x06 \x01(\bR\x18requiresHistoryStreaming\x12D\n" +
+	"\n" +
+	"properties\x18\a \x03(\v2$.OrchestratorRequest.PropertiesEntryR\n" +
+	"properties\x12X\n" +
+	"\x19orchestrationTraceContext\x18\b \x01(\v2\x1a.OrchestrationTraceContextR\x19orchestrationTraceContext\x1aU\n" +
+	"\x0fPropertiesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12,\n" +
+	"\x05value\x18\x02 \x01(\v2\x16.google.protobuf.ValueR\x05value:\x028\x01\"\x85\x04\n" +
 	"\x14OrchestratorResponse\x12\x1e\n" +
 	"\n" +
 	"instanceId\x18\x01 \x01(\tR\n" +
 	"instanceId\x12-\n" +
 	"\aactions\x18\x02 \x03(\v2\x13.OrchestratorActionR\aactions\x12@\n" +
-	"\fcustomStatus\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\fcustomStatus\"\xea\x02\n" +
+	"\fcustomStatus\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\fcustomStatus\x12(\n" +
+	"\x0fcompletionToken\x18\x04 \x01(\tR\x0fcompletionToken\x12K\n" +
+	"\x12numEventsProcessed\x18\x05 \x01(\v2\x1b.google.protobuf.Int32ValueR\x12numEventsProcessed\x12X\n" +
+	"\x19orchestrationTraceContext\x18\x06 \x01(\v2\x1a.OrchestrationTraceContextR\x19orchestrationTraceContext\x12(\n" +
+	"\x0frequiresHistory\x18\a \x01(\bR\x0frequiresHistory\x12 \n" +
+	"\tisPartial\x18\b \x01(\bB\x02\x18\x01R\tisPartial\x12?\n" +
+	"\n" +
+	"chunkIndex\x18\t \x01(\v2\x1b.google.protobuf.Int32ValueB\x02\x18\x01R\n" +
+	"chunkIndex\"\x96\x05\n" +
 	"\x15CreateInstanceRequest\x12\x1e\n" +
 	"\n" +
 	"instanceId\x18\x01 \x01(\tR\n" +
@@ -5682,10 +8288,17 @@ const file_orchestrator_service_proto_rawDesc = "" +
 	"\aversion\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\aversion\x122\n" +
 	"\x05input\x18\x04 \x01(\v2\x1c.google.protobuf.StringValueR\x05input\x12T\n" +
 	"\x17scheduledStartTimestamp\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\x17scheduledStartTimestamp\x12[\n" +
-	"\x1aorchestrationIdReusePolicy\x18\x06 \x01(\v2\x1b.OrchestrationIdReusePolicyR\x1aorchestrationIdReusePolicy\"\x90\x01\n" +
-	"\x1aOrchestrationIdReusePolicy\x12>\n" +
-	"\x0foperationStatus\x18\x01 \x03(\x0e2\x14.OrchestrationStatusR\x0foperationStatus\x122\n" +
-	"\x06action\x18\x02 \x01(\x0e2\x1a.CreateOrchestrationActionR\x06action\"8\n" +
+	"\x1aorchestrationIdReusePolicy\x18\x06 \x01(\v2\x1b.OrchestrationIdReusePolicyR\x1aorchestrationIdReusePolicy\x12>\n" +
+	"\vexecutionId\x18\a \x01(\v2\x1c.google.protobuf.StringValueR\vexecutionId\x124\n" +
+	"\x04tags\x18\b \x03(\v2 .CreateInstanceRequest.TagsEntryR\x04tags\x12=\n" +
+	"\x12parentTraceContext\x18\t \x01(\v2\r.TraceContextR\x12parentTraceContext\x12<\n" +
+	"\vrequestTime\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\vrequestTime\x1a7\n" +
+	"\tTagsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"f\n" +
+	"\x1aOrchestrationIdReusePolicy\x12B\n" +
+	"\x11replaceableStatus\x18\x01 \x03(\x0e2\x14.OrchestrationStatusR\x11replaceableStatusJ\x04\b\x02\x10\x03\"8\n" +
 	"\x16CreateInstanceResponse\x12\x1e\n" +
 	"\n" +
 	"instanceId\x18\x01 \x01(\tR\n" +
@@ -5703,7 +8316,7 @@ const file_orchestrator_service_proto_rawDesc = "" +
 	"instanceId\x18\x01 \x01(\tR\n" +
 	"instanceId\x124\n" +
 	"\x06reason\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\x06reason\"\x18\n" +
-	"\x16RewindInstanceResponse\"\xe9\x05\n" +
+	"\x16RewindInstanceResponse\"\xe1\a\n" +
 	"\x12OrchestrationState\x12\x1e\n" +
 	"\n" +
 	"instanceId\x18\x01 \x01(\tR\n" +
@@ -5718,8 +8331,14 @@ const file_orchestrator_service_proto_rawDesc = "" +
 	"\x06output\x18\t \x01(\v2\x1c.google.protobuf.StringValueR\x06output\x12@\n" +
 	"\fcustomStatus\x18\n" +
 	" \x01(\v2\x1c.google.protobuf.StringValueR\fcustomStatus\x12;\n" +
-	"\x0efailureDetails\x18\v \x01(\v2\x13.TaskFailureDetailsR\x0efailureDetails\x12H\n" +
-	"\x10parentInstanceId\x18\f \x01(\v2\x1c.google.protobuf.StringValueR\x10parentInstanceId\"{\n" +
+	"\x0efailureDetails\x18\v \x01(\v2\x13.TaskFailureDetailsR\x0efailureDetails\x12>\n" +
+	"\vexecutionId\x18\f \x01(\v2\x1c.google.protobuf.StringValueR\vexecutionId\x12J\n" +
+	"\x12completedTimestamp\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\x12completedTimestamp\x12H\n" +
+	"\x10parentInstanceId\x18\x0e \x01(\v2\x1c.google.protobuf.StringValueR\x10parentInstanceId\x121\n" +
+	"\x04tags\x18\x0f \x03(\v2\x1d.OrchestrationState.TagsEntryR\x04tags\x1a7\n" +
+	"\tTagsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"{\n" +
 	"\x11RaiseEventRequest\x12\x1e\n" +
 	"\n" +
 	"instanceId\x18\x01 \x01(\tR\n" +
@@ -5759,25 +8378,49 @@ const file_orchestrator_service_proto_rawDesc = "" +
 	"\x15fetchInputsAndOutputs\x18\b \x01(\bR\x15fetchInputsAndOutputs\"\xa9\x01\n" +
 	"\x16QueryInstancesResponse\x12C\n" +
 	"\x12orchestrationState\x18\x01 \x03(\v2\x13.OrchestrationStateR\x12orchestrationState\x12J\n" +
-	"\x11continuationToken\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\x11continuationToken\"\xac\x01\n" +
+	"\x11continuationToken\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\x11continuationToken\"\xc8\x02\n" +
+	"\x16ListInstanceIdsRequest\x12:\n" +
+	"\rruntimeStatus\x18\x01 \x03(\x0e2\x14.OrchestrationStatusR\rruntimeStatus\x12H\n" +
+	"\x11completedTimeFrom\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x11completedTimeFrom\x12D\n" +
+	"\x0fcompletedTimeTo\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x0fcompletedTimeTo\x12\x1a\n" +
+	"\bpageSize\x18\x04 \x01(\x05R\bpageSize\x12F\n" +
+	"\x0flastInstanceKey\x18\x05 \x01(\v2\x1c.google.protobuf.StringValueR\x0flastInstanceKey\"\x83\x01\n" +
+	"\x17ListInstanceIdsResponse\x12 \n" +
+	"\vinstanceIds\x18\x01 \x03(\tR\vinstanceIds\x12F\n" +
+	"\x0flastInstanceKey\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\x0flastInstanceKey\"\x8e\x02\n" +
 	"\x15PurgeInstancesRequest\x12 \n" +
 	"\n" +
 	"instanceId\x18\x01 \x01(\tH\x00R\n" +
 	"instanceId\x12H\n" +
-	"\x13purgeInstanceFilter\x18\x02 \x01(\v2\x14.PurgeInstanceFilterH\x00R\x13purgeInstanceFilter\x12\x1c\n" +
-	"\trecursive\x18\x03 \x01(\bR\trecursiveB\t\n" +
-	"\arequest\"\xd9\x01\n" +
+	"\x13purgeInstanceFilter\x18\x02 \x01(\v2\x14.PurgeInstanceFilterH\x00R\x13purgeInstanceFilter\x126\n" +
+	"\rinstanceBatch\x18\x04 \x01(\v2\x0e.InstanceBatchH\x00R\rinstanceBatch\x12\x1c\n" +
+	"\trecursive\x18\x03 \x01(\bR\trecursive\x12(\n" +
+	"\x0fisOrchestration\x18\x05 \x01(\bR\x0fisOrchestrationB\t\n" +
+	"\arequest\"\x8e\x02\n" +
 	"\x13PurgeInstanceFilter\x12D\n" +
 	"\x0fcreatedTimeFrom\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x0fcreatedTimeFrom\x12@\n" +
 	"\rcreatedTimeTo\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\rcreatedTimeTo\x12:\n" +
-	"\rruntimeStatus\x18\x03 \x03(\x0e2\x14.OrchestrationStatusR\rruntimeStatus\"L\n" +
+	"\rruntimeStatus\x18\x03 \x03(\x0e2\x14.OrchestrationStatusR\rruntimeStatus\x123\n" +
+	"\atimeout\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\atimeout\"\x88\x01\n" +
 	"\x16PurgeInstancesResponse\x122\n" +
-	"\x14deletedInstanceCount\x18\x01 \x01(\x05R\x14deletedInstanceCount\"B\n" +
+	"\x14deletedInstanceCount\x18\x01 \x01(\x05R\x14deletedInstanceCount\x12:\n" +
+	"\n" +
+	"isComplete\x18\x02 \x01(\v2\x1a.google.protobuf.BoolValueR\n" +
+	"isComplete\"t\n" +
+	"\x16RestartInstanceRequest\x12\x1e\n" +
+	"\n" +
+	"instanceId\x18\x01 \x01(\tR\n" +
+	"instanceId\x12:\n" +
+	"\x18restartWithNewInstanceId\x18\x02 \x01(\bR\x18restartWithNewInstanceId\"9\n" +
+	"\x17RestartInstanceResponse\x12\x1e\n" +
+	"\n" +
+	"instanceId\x18\x01 \x01(\tR\n" +
+	"instanceId\"B\n" +
 	"\x14CreateTaskHubRequest\x12*\n" +
 	"\x10recreateIfExists\x18\x01 \x01(\bR\x10recreateIfExists\"\x17\n" +
 	"\x15CreateTaskHubResponse\"\x16\n" +
 	"\x14DeleteTaskHubRequest\"\x17\n" +
-	"\x15DeleteTaskHubResponse\"\xdd\x01\n" +
+	"\x15DeleteTaskHubResponse\"\xda\x02\n" +
 	"\x13SignalEntityRequest\x12\x1e\n" +
 	"\n" +
 	"instanceId\x18\x01 \x01(\tR\n" +
@@ -5785,7 +8428,9 @@ const file_orchestrator_service_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x122\n" +
 	"\x05input\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\x05input\x12\x1c\n" +
 	"\trequestId\x18\x04 \x01(\tR\trequestId\x12@\n" +
-	"\rscheduledTime\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\rscheduledTime\"\x16\n" +
+	"\rscheduledTime\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\rscheduledTime\x12=\n" +
+	"\x12parentTraceContext\x18\x06 \x01(\v2\r.TraceContextR\x12parentTraceContext\x12<\n" +
+	"\vrequestTime\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\vrequestTime\"\x16\n" +
 	"\x14SignalEntityResponse\"V\n" +
 	"\x10GetEntityRequest\x12\x1e\n" +
 	"\n" +
@@ -5825,7 +8470,7 @@ const file_orchestrator_service_proto_rawDesc = "" +
 	"\x14emptyEntitiesRemoved\x18\x02 \x01(\x05R\x14emptyEntitiesRemoved\x124\n" +
 	"\x15orphanedLocksReleased\x18\x03 \x01(\x05R\x15orphanedLocksReleased\"y\n" +
 	"\x1cOrchestratorEntityParameters\x12Y\n" +
-	"\x1aentityMessageReorderWindow\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\x1aentityMessageReorderWindow\"\xa7\x01\n" +
+	"\x1aentityMessageReorderWindow\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\x1aentityMessageReorderWindow\"\xc3\x02\n" +
 	"\x12EntityBatchRequest\x12\x1e\n" +
 	"\n" +
 	"instanceId\x18\x01 \x01(\tR\n" +
@@ -5833,39 +8478,69 @@ const file_orchestrator_service_proto_rawDesc = "" +
 	"\ventityState\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\ventityState\x121\n" +
 	"\n" +
 	"operations\x18\x03 \x03(\v2\x11.OperationRequestR\n" +
-	"operations\"\xe8\x01\n" +
+	"operations\x12C\n" +
+	"\n" +
+	"properties\x18\x04 \x03(\v2#.EntityBatchRequest.PropertiesEntryR\n" +
+	"properties\x1aU\n" +
+	"\x0fPropertiesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12,\n" +
+	"\x05value\x18\x02 \x01(\v2\x16.google.protobuf.ValueR\x05value:\x028\x01\"\xf0\x02\n" +
 	"\x11EntityBatchResult\x12*\n" +
 	"\aresults\x18\x01 \x03(\v2\x10.OperationResultR\aresults\x12*\n" +
 	"\aactions\x18\x02 \x03(\v2\x10.OperationActionR\aactions\x12>\n" +
 	"\ventityState\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\ventityState\x12;\n" +
-	"\x0efailureDetails\x18\x04 \x01(\v2\x13.TaskFailureDetailsR\x0efailureDetails\"\x82\x01\n" +
+	"\x0efailureDetails\x18\x04 \x01(\v2\x13.TaskFailureDetailsR\x0efailureDetails\x12(\n" +
+	"\x0fcompletionToken\x18\x05 \x01(\tR\x0fcompletionToken\x126\n" +
+	"\x0eoperationInfos\x18\x06 \x03(\v2\x0e.OperationInfoR\x0eoperationInfos\x12$\n" +
+	"\rrequiresState\x18\a \x01(\bR\rrequiresState\"\xce\x01\n" +
+	"\rEntityRequest\x12\x1e\n" +
+	"\n" +
+	"instanceId\x18\x01 \x01(\tR\n" +
+	"instanceId\x12 \n" +
+	"\vexecutionId\x18\x02 \x01(\tR\vexecutionId\x12>\n" +
+	"\ventityState\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\ventityState\x12;\n" +
+	"\x11operationRequests\x18\x04 \x03(\v2\r.HistoryEventR\x11operationRequests\"\xb5\x01\n" +
 	"\x10OperationRequest\x12\x1c\n" +
 	"\toperation\x18\x01 \x01(\tR\toperation\x12\x1c\n" +
 	"\trequestId\x18\x02 \x01(\tR\trequestId\x122\n" +
-	"\x05input\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\x05input\"\x89\x01\n" +
+	"\x05input\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\x05input\x121\n" +
+	"\ftraceContext\x18\x04 \x01(\v2\r.TraceContextR\ftraceContext\"\x89\x01\n" +
 	"\x0fOperationResult\x123\n" +
 	"\asuccess\x18\x01 \x01(\v2\x17.OperationResultSuccessH\x00R\asuccess\x123\n" +
 	"\afailure\x18\x02 \x01(\v2\x17.OperationResultFailureH\x00R\afailureB\f\n" +
 	"\n" +
-	"resultType\"N\n" +
+	"resultType\"w\n" +
+	"\rOperationInfo\x12\x1c\n" +
+	"\trequestId\x18\x01 \x01(\tR\trequestId\x12H\n" +
+	"\x13responseDestination\x18\x02 \x01(\v2\x16.OrchestrationInstanceR\x13responseDestination\"\xca\x01\n" +
 	"\x16OperationResultSuccess\x124\n" +
-	"\x06result\x18\x01 \x01(\v2\x1c.google.protobuf.StringValueR\x06result\"U\n" +
+	"\x06result\x18\x01 \x01(\v2\x1c.google.protobuf.StringValueR\x06result\x12>\n" +
+	"\fstartTimeUtc\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\fstartTimeUtc\x12:\n" +
+	"\n" +
+	"endTimeUtc\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"endTimeUtc\"\xd1\x01\n" +
 	"\x16OperationResultFailure\x12;\n" +
-	"\x0efailureDetails\x18\x01 \x01(\v2\x13.TaskFailureDetailsR\x0efailureDetails\"\xc3\x01\n" +
+	"\x0efailureDetails\x18\x01 \x01(\v2\x13.TaskFailureDetailsR\x0efailureDetails\x12>\n" +
+	"\fstartTimeUtc\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\fstartTimeUtc\x12:\n" +
+	"\n" +
+	"endTimeUtc\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"endTimeUtc\"\xc3\x01\n" +
 	"\x0fOperationAction\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x123\n" +
 	"\n" +
 	"sendSignal\x18\x02 \x01(\v2\x11.SendSignalActionH\x00R\n" +
 	"sendSignal\x12T\n" +
 	"\x15startNewOrchestration\x18\x03 \x01(\v2\x1c.StartNewOrchestrationActionH\x00R\x15startNewOrchestrationB\x15\n" +
-	"\x13operationActionType\"\xbc\x01\n" +
+	"\x13operationActionType\"\xb9\x02\n" +
 	"\x10SendSignalAction\x12\x1e\n" +
 	"\n" +
 	"instanceId\x18\x01 \x01(\tR\n" +
 	"instanceId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x122\n" +
 	"\x05input\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\x05input\x12@\n" +
-	"\rscheduledTime\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\rscheduledTime\"\xff\x01\n" +
+	"\rscheduledTime\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\rscheduledTime\x12<\n" +
+	"\vrequestTime\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\vrequestTime\x12=\n" +
+	"\x12parentTraceContext\x18\x06 \x01(\v2\r.TraceContextR\x12parentTraceContext\"\xfc\x02\n" +
 	"\x1bStartNewOrchestrationAction\x12\x1e\n" +
 	"\n" +
 	"instanceId\x18\x01 \x01(\tR\n" +
@@ -5873,14 +8548,68 @@ const file_orchestrator_service_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x126\n" +
 	"\aversion\x18\x03 \x01(\v2\x1c.google.protobuf.StringValueR\aversion\x122\n" +
 	"\x05input\x18\x04 \x01(\v2\x1c.google.protobuf.StringValueR\x05input\x12@\n" +
-	"\rscheduledTime\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\rscheduledTime\"\x15\n" +
-	"\x13GetWorkItemsRequest\"\xda\x01\n" +
+	"\rscheduledTime\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\rscheduledTime\x12<\n" +
+	"\vrequestTime\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\vrequestTime\x12=\n" +
+	"\x12parentTraceContext\x18\a \x01(\v2\r.TraceContextR\x12parentTraceContext\"F\n" +
+	"\x1aAbandonActivityTaskRequest\x12(\n" +
+	"\x0fcompletionToken\x18\x01 \x01(\tR\x0fcompletionToken\"\x1d\n" +
+	"\x1bAbandonActivityTaskResponse\"K\n" +
+	"\x1fAbandonOrchestrationTaskRequest\x12(\n" +
+	"\x0fcompletionToken\x18\x01 \x01(\tR\x0fcompletionToken\"\"\n" +
+	" AbandonOrchestrationTaskResponse\"D\n" +
+	"\x18AbandonEntityTaskRequest\x12(\n" +
+	"\x0fcompletionToken\x18\x01 \x01(\tR\x0fcompletionToken\"\x1b\n" +
+	"\x19AbandonEntityTaskResponse\"\x9a\x01\n" +
+	",SkipGracefulOrchestrationTerminationsRequest\x124\n" +
+	"\rinstanceBatch\x18\x01 \x01(\v2\x0e.InstanceBatchR\rinstanceBatch\x124\n" +
+	"\x06reason\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\x06reason\"i\n" +
+	"-SkipGracefulOrchestrationTerminationsResponse\x128\n" +
+	"\x17unterminatedInstanceIds\x18\x01 \x03(\tR\x17unterminatedInstanceIds\"\xe6\x02\n" +
+	"\x13GetWorkItemsRequest\x12P\n" +
+	"#maxConcurrentOrchestrationWorkItems\x18\x01 \x01(\x05R#maxConcurrentOrchestrationWorkItems\x12F\n" +
+	"\x1emaxConcurrentActivityWorkItems\x18\x02 \x01(\x05R\x1emaxConcurrentActivityWorkItems\x12B\n" +
+	"\x1cmaxConcurrentEntityWorkItems\x18\x03 \x01(\x05R\x1cmaxConcurrentEntityWorkItems\x125\n" +
+	"\fcapabilities\x18\n" +
+	" \x03(\x0e2\x11.WorkerCapabilityR\fcapabilities\x12:\n" +
+	"\x0fworkItemFilters\x18\v \x01(\v2\x10.WorkItemFiltersR\x0fworkItemFilters\"\xab\x01\n" +
+	"\x0fWorkItemFilters\x12<\n" +
+	"\x0eorchestrations\x18\x01 \x03(\v2\x14.OrchestrationFilterR\x0eorchestrations\x12/\n" +
+	"\n" +
+	"activities\x18\x02 \x03(\v2\x0f.ActivityFilterR\n" +
+	"activities\x12)\n" +
+	"\bentities\x18\x03 \x03(\v2\r.EntityFilterR\bentities\"E\n" +
+	"\x13OrchestrationFilter\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
+	"\bversions\x18\x02 \x03(\tR\bversions\"@\n" +
+	"\x0eActivityFilter\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
+	"\bversions\x18\x02 \x03(\tR\bversions\"\"\n" +
+	"\fEntityFilter\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"\xef\x02\n" +
 	"\bWorkItem\x12H\n" +
 	"\x13orchestratorRequest\x18\x01 \x01(\v2\x14.OrchestratorRequestH\x00R\x13orchestratorRequest\x12<\n" +
 	"\x0factivityRequest\x18\x02 \x01(\v2\x10.ActivityRequestH\x00R\x0factivityRequest\x12;\n" +
-	"\rentityRequest\x18\x03 \x01(\v2\x13.EntityBatchRequestH\x00R\rentityRequestB\t\n" +
+	"\rentityRequest\x18\x03 \x01(\v2\x13.EntityBatchRequestH\x00R\rentityRequest\x12-\n" +
+	"\n" +
+	"healthPing\x18\x04 \x01(\v2\v.HealthPingH\x00R\n" +
+	"healthPing\x12:\n" +
+	"\x0fentityRequestV2\x18\x05 \x01(\v2\x0e.EntityRequestH\x00R\x0fentityRequestV2\x12(\n" +
+	"\x0fcompletionToken\x18\n" +
+	" \x01(\tR\x0fcompletionTokenB\t\n" +
 	"\arequest\"\x16\n" +
-	"\x14CompleteTaskResponse*\xb5\x02\n" +
+	"\x14CompleteTaskResponse\"\f\n" +
+	"\n" +
+	"HealthPing\"\xb4\x01\n" +
+	"\x1cStreamInstanceHistoryRequest\x12\x1e\n" +
+	"\n" +
+	"instanceId\x18\x01 \x01(\tR\n" +
+	"instanceId\x12>\n" +
+	"\vexecutionId\x18\x02 \x01(\v2\x1c.google.protobuf.StringValueR\vexecutionId\x124\n" +
+	"\x15forWorkItemProcessing\x18\x03 \x01(\bR\x15forWorkItemProcessing\"5\n" +
+	"\fHistoryChunk\x12%\n" +
+	"\x06events\x18\x01 \x03(\v2\r.HistoryEventR\x06events\"1\n" +
+	"\rInstanceBatch\x12 \n" +
+	"\vinstanceIds\x18\x01 \x03(\tR\vinstanceIds*\xb5\x02\n" +
 	"\x13OrchestrationStatus\x12 \n" +
 	"\x1cORCHESTRATION_STATUS_RUNNING\x10\x00\x12\"\n" +
 	"\x1eORCHESTRATION_STATUS_COMPLETED\x10\x01\x12)\n" +
@@ -5889,18 +8618,18 @@ const file_orchestrator_service_proto_rawDesc = "" +
 	"\x1dORCHESTRATION_STATUS_CANCELED\x10\x04\x12#\n" +
 	"\x1fORCHESTRATION_STATUS_TERMINATED\x10\x05\x12 \n" +
 	"\x1cORCHESTRATION_STATUS_PENDING\x10\x06\x12\"\n" +
-	"\x1eORCHESTRATION_STATUS_SUSPENDED\x10\a*A\n" +
-	"\x19CreateOrchestrationAction\x12\t\n" +
-	"\x05ERROR\x10\x00\x12\n" +
-	"\n" +
-	"\x06IGNORE\x10\x01\x12\r\n" +
-	"\tTERMINATE\x10\x022\xfc\n" +
-	"\n" +
+	"\x1eORCHESTRATION_STATUS_SUSPENDED\x10\a*\xab\x01\n" +
+	"\x10WorkerCapability\x12!\n" +
+	"\x1dWORKER_CAPABILITY_UNSPECIFIED\x10\x00\x12'\n" +
+	"#WORKER_CAPABILITY_HISTORY_STREAMING\x10\x01\x12%\n" +
+	"!WORKER_CAPABILITY_SCHEDULED_TASKS\x10\x02\x12$\n" +
+	" WORKER_CAPABILITY_LARGE_PAYLOADS\x10\x032\xf0\x0f\n" +
 	"\x15TaskHubSidecarService\x127\n" +
 	"\x05Hello\x12\x16.google.protobuf.Empty\x1a\x16.google.protobuf.Empty\x12@\n" +
 	"\rStartInstance\x12\x16.CreateInstanceRequest\x1a\x17.CreateInstanceResponse\x128\n" +
 	"\vGetInstance\x12\x13.GetInstanceRequest\x1a\x14.GetInstanceResponse\x12A\n" +
-	"\x0eRewindInstance\x12\x16.RewindInstanceRequest\x1a\x17.RewindInstanceResponse\x12A\n" +
+	"\x0eRewindInstance\x12\x16.RewindInstanceRequest\x1a\x17.RewindInstanceResponse\x12D\n" +
+	"\x0fRestartInstance\x12\x17.RestartInstanceRequest\x1a\x18.RestartInstanceResponse\x12A\n" +
 	"\x14WaitForInstanceStart\x12\x13.GetInstanceRequest\x1a\x14.GetInstanceResponse\x12F\n" +
 	"\x19WaitForInstanceCompletion\x12\x13.GetInstanceRequest\x1a\x14.GetInstanceResponse\x125\n" +
 	"\n" +
@@ -5908,18 +8637,24 @@ const file_orchestrator_service_proto_rawDesc = "" +
 	"\x11TerminateInstance\x12\x11.TerminateRequest\x1a\x12.TerminateResponse\x124\n" +
 	"\x0fSuspendInstance\x12\x0f.SuspendRequest\x1a\x10.SuspendResponse\x121\n" +
 	"\x0eResumeInstance\x12\x0e.ResumeRequest\x1a\x0f.ResumeResponse\x12A\n" +
-	"\x0eQueryInstances\x12\x16.QueryInstancesRequest\x1a\x17.QueryInstancesResponse\x12A\n" +
+	"\x0eQueryInstances\x12\x16.QueryInstancesRequest\x1a\x17.QueryInstancesResponse\x12D\n" +
+	"\x0fListInstanceIds\x12\x17.ListInstanceIdsRequest\x1a\x18.ListInstanceIdsResponse\x12A\n" +
 	"\x0ePurgeInstances\x12\x16.PurgeInstancesRequest\x1a\x17.PurgeInstancesResponse\x121\n" +
 	"\fGetWorkItems\x12\x14.GetWorkItemsRequest\x1a\t.WorkItem0\x01\x12@\n" +
 	"\x14CompleteActivityTask\x12\x11.ActivityResponse\x1a\x15.CompleteTaskResponse\x12H\n" +
 	"\x18CompleteOrchestratorTask\x12\x15.OrchestratorResponse\x1a\x15.CompleteTaskResponse\x12?\n" +
-	"\x12CompleteEntityTask\x12\x12.EntityBatchResult\x1a\x15.CompleteTaskResponse\x12>\n" +
+	"\x12CompleteEntityTask\x12\x12.EntityBatchResult\x1a\x15.CompleteTaskResponse\x12G\n" +
+	"\x15StreamInstanceHistory\x12\x1d.StreamInstanceHistoryRequest\x1a\r.HistoryChunk0\x01\x12>\n" +
 	"\rCreateTaskHub\x12\x15.CreateTaskHubRequest\x1a\x16.CreateTaskHubResponse\x12>\n" +
 	"\rDeleteTaskHub\x12\x15.DeleteTaskHubRequest\x1a\x16.DeleteTaskHubResponse\x12;\n" +
 	"\fSignalEntity\x12\x14.SignalEntityRequest\x1a\x15.SignalEntityResponse\x122\n" +
 	"\tGetEntity\x12\x11.GetEntityRequest\x1a\x12.GetEntityResponse\x12>\n" +
 	"\rQueryEntities\x12\x15.QueryEntitiesRequest\x1a\x16.QueryEntitiesResponse\x12M\n" +
-	"\x12CleanEntityStorage\x12\x1a.CleanEntityStorageRequest\x1a\x1b.CleanEntityStorageResponseBf\n" +
+	"\x12CleanEntityStorage\x12\x1a.CleanEntityStorageRequest\x1a\x1b.CleanEntityStorageResponse\x12X\n" +
+	"\x1bAbandonTaskActivityWorkItem\x12\x1b.AbandonActivityTaskRequest\x1a\x1c.AbandonActivityTaskResponse\x12f\n" +
+	"\x1fAbandonTaskOrchestratorWorkItem\x12 .AbandonOrchestrationTaskRequest\x1a!.AbandonOrchestrationTaskResponse\x12R\n" +
+	"\x19AbandonTaskEntityWorkItem\x12\x19.AbandonEntityTaskRequest\x1a\x1a.AbandonEntityTaskResponse\x12\x86\x01\n" +
+	"%SkipGracefulOrchestrationTerminations\x12-.SkipGracefulOrchestrationTerminationsRequest\x1a..SkipGracefulOrchestrationTerminationsResponseBf\n" +
 	"1com.microsoft.durabletask.implementation.protobufZ\x10/internal/protos\xaa\x02\x1eMicrosoft.DurableTask.Protobufb\x06proto3"
 
 var (
@@ -5935,313 +8670,474 @@ func file_orchestrator_service_proto_rawDescGZIP() []byte {
 }
 
 var file_orchestrator_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_orchestrator_service_proto_msgTypes = make([]protoimpl.MessageInfo, 85)
+var file_orchestrator_service_proto_msgTypes = make([]protoimpl.MessageInfo, 131)
 var file_orchestrator_service_proto_goTypes = []any{
-	(OrchestrationStatus)(0),                       // 0: OrchestrationStatus
-	(CreateOrchestrationAction)(0),                 // 1: CreateOrchestrationAction
-	(*OrchestrationInstance)(nil),                  // 2: OrchestrationInstance
-	(*ActivityRequest)(nil),                        // 3: ActivityRequest
-	(*ActivityResponse)(nil),                       // 4: ActivityResponse
-	(*TaskFailureDetails)(nil),                     // 5: TaskFailureDetails
-	(*ParentInstanceInfo)(nil),                     // 6: ParentInstanceInfo
-	(*TraceContext)(nil),                           // 7: TraceContext
-	(*ExecutionStartedEvent)(nil),                  // 8: ExecutionStartedEvent
-	(*ExecutionCompletedEvent)(nil),                // 9: ExecutionCompletedEvent
-	(*ExecutionTerminatedEvent)(nil),               // 10: ExecutionTerminatedEvent
-	(*TaskScheduledEvent)(nil),                     // 11: TaskScheduledEvent
-	(*TaskCompletedEvent)(nil),                     // 12: TaskCompletedEvent
-	(*TaskFailedEvent)(nil),                        // 13: TaskFailedEvent
-	(*SubOrchestrationInstanceCreatedEvent)(nil),   // 14: SubOrchestrationInstanceCreatedEvent
-	(*SubOrchestrationInstanceCompletedEvent)(nil), // 15: SubOrchestrationInstanceCompletedEvent
-	(*SubOrchestrationInstanceFailedEvent)(nil),    // 16: SubOrchestrationInstanceFailedEvent
-	(*TimerCreatedEvent)(nil),                      // 17: TimerCreatedEvent
-	(*TimerFiredEvent)(nil),                        // 18: TimerFiredEvent
-	(*OrchestratorStartedEvent)(nil),               // 19: OrchestratorStartedEvent
-	(*OrchestratorCompletedEvent)(nil),             // 20: OrchestratorCompletedEvent
-	(*EventSentEvent)(nil),                         // 21: EventSentEvent
-	(*EventRaisedEvent)(nil),                       // 22: EventRaisedEvent
-	(*GenericEvent)(nil),                           // 23: GenericEvent
-	(*HistoryStateEvent)(nil),                      // 24: HistoryStateEvent
-	(*ContinueAsNewEvent)(nil),                     // 25: ContinueAsNewEvent
-	(*ExecutionSuspendedEvent)(nil),                // 26: ExecutionSuspendedEvent
-	(*ExecutionResumedEvent)(nil),                  // 27: ExecutionResumedEvent
-	(*HistoryEvent)(nil),                           // 28: HistoryEvent
-	(*ScheduleTaskAction)(nil),                     // 29: ScheduleTaskAction
-	(*CreateSubOrchestrationAction)(nil),           // 30: CreateSubOrchestrationAction
-	(*CreateTimerAction)(nil),                      // 31: CreateTimerAction
-	(*SendEventAction)(nil),                        // 32: SendEventAction
-	(*CompleteOrchestrationAction)(nil),            // 33: CompleteOrchestrationAction
-	(*TerminateOrchestrationAction)(nil),           // 34: TerminateOrchestrationAction
-	(*OrchestratorAction)(nil),                     // 35: OrchestratorAction
-	(*OrchestratorRequest)(nil),                    // 36: OrchestratorRequest
-	(*OrchestratorResponse)(nil),                   // 37: OrchestratorResponse
-	(*CreateInstanceRequest)(nil),                  // 38: CreateInstanceRequest
-	(*OrchestrationIdReusePolicy)(nil),             // 39: OrchestrationIdReusePolicy
-	(*CreateInstanceResponse)(nil),                 // 40: CreateInstanceResponse
-	(*GetInstanceRequest)(nil),                     // 41: GetInstanceRequest
-	(*GetInstanceResponse)(nil),                    // 42: GetInstanceResponse
-	(*RewindInstanceRequest)(nil),                  // 43: RewindInstanceRequest
-	(*RewindInstanceResponse)(nil),                 // 44: RewindInstanceResponse
-	(*OrchestrationState)(nil),                     // 45: OrchestrationState
-	(*RaiseEventRequest)(nil),                      // 46: RaiseEventRequest
-	(*RaiseEventResponse)(nil),                     // 47: RaiseEventResponse
-	(*TerminateRequest)(nil),                       // 48: TerminateRequest
-	(*TerminateResponse)(nil),                      // 49: TerminateResponse
-	(*SuspendRequest)(nil),                         // 50: SuspendRequest
-	(*SuspendResponse)(nil),                        // 51: SuspendResponse
-	(*ResumeRequest)(nil),                          // 52: ResumeRequest
-	(*ResumeResponse)(nil),                         // 53: ResumeResponse
-	(*QueryInstancesRequest)(nil),                  // 54: QueryInstancesRequest
-	(*InstanceQuery)(nil),                          // 55: InstanceQuery
-	(*QueryInstancesResponse)(nil),                 // 56: QueryInstancesResponse
-	(*PurgeInstancesRequest)(nil),                  // 57: PurgeInstancesRequest
-	(*PurgeInstanceFilter)(nil),                    // 58: PurgeInstanceFilter
-	(*PurgeInstancesResponse)(nil),                 // 59: PurgeInstancesResponse
-	(*CreateTaskHubRequest)(nil),                   // 60: CreateTaskHubRequest
-	(*CreateTaskHubResponse)(nil),                  // 61: CreateTaskHubResponse
-	(*DeleteTaskHubRequest)(nil),                   // 62: DeleteTaskHubRequest
-	(*DeleteTaskHubResponse)(nil),                  // 63: DeleteTaskHubResponse
-	(*SignalEntityRequest)(nil),                    // 64: SignalEntityRequest
-	(*SignalEntityResponse)(nil),                   // 65: SignalEntityResponse
-	(*GetEntityRequest)(nil),                       // 66: GetEntityRequest
-	(*GetEntityResponse)(nil),                      // 67: GetEntityResponse
-	(*EntityQuery)(nil),                            // 68: EntityQuery
-	(*QueryEntitiesRequest)(nil),                   // 69: QueryEntitiesRequest
-	(*QueryEntitiesResponse)(nil),                  // 70: QueryEntitiesResponse
-	(*EntityMetadata)(nil),                         // 71: EntityMetadata
-	(*CleanEntityStorageRequest)(nil),              // 72: CleanEntityStorageRequest
-	(*CleanEntityStorageResponse)(nil),             // 73: CleanEntityStorageResponse
-	(*OrchestratorEntityParameters)(nil),           // 74: OrchestratorEntityParameters
-	(*EntityBatchRequest)(nil),                     // 75: EntityBatchRequest
-	(*EntityBatchResult)(nil),                      // 76: EntityBatchResult
-	(*OperationRequest)(nil),                       // 77: OperationRequest
-	(*OperationResult)(nil),                        // 78: OperationResult
-	(*OperationResultSuccess)(nil),                 // 79: OperationResultSuccess
-	(*OperationResultFailure)(nil),                 // 80: OperationResultFailure
-	(*OperationAction)(nil),                        // 81: OperationAction
-	(*SendSignalAction)(nil),                       // 82: SendSignalAction
-	(*StartNewOrchestrationAction)(nil),            // 83: StartNewOrchestrationAction
-	(*GetWorkItemsRequest)(nil),                    // 84: GetWorkItemsRequest
-	(*WorkItem)(nil),                               // 85: WorkItem
-	(*CompleteTaskResponse)(nil),                   // 86: CompleteTaskResponse
-	(*wrappers.StringValue)(nil),                   // 87: google.protobuf.StringValue
-	(*timestamp.Timestamp)(nil),                    // 88: google.protobuf.Timestamp
-	(*wrappers.Int32Value)(nil),                    // 89: google.protobuf.Int32Value
-	(*duration.Duration)(nil),                      // 90: google.protobuf.Duration
-	(*empty.Empty)(nil),                            // 91: google.protobuf.Empty
+	(OrchestrationStatus)(0),                              // 0: OrchestrationStatus
+	(WorkerCapability)(0),                                 // 1: WorkerCapability
+	(*OrchestrationInstance)(nil),                         // 2: OrchestrationInstance
+	(*ActivityRequest)(nil),                               // 3: ActivityRequest
+	(*ActivityResponse)(nil),                              // 4: ActivityResponse
+	(*TaskFailureDetails)(nil),                            // 5: TaskFailureDetails
+	(*ParentInstanceInfo)(nil),                            // 6: ParentInstanceInfo
+	(*TraceContext)(nil),                                  // 7: TraceContext
+	(*ExecutionStartedEvent)(nil),                         // 8: ExecutionStartedEvent
+	(*ExecutionCompletedEvent)(nil),                       // 9: ExecutionCompletedEvent
+	(*ExecutionTerminatedEvent)(nil),                      // 10: ExecutionTerminatedEvent
+	(*TaskScheduledEvent)(nil),                            // 11: TaskScheduledEvent
+	(*TaskCompletedEvent)(nil),                            // 12: TaskCompletedEvent
+	(*TaskFailedEvent)(nil),                               // 13: TaskFailedEvent
+	(*SubOrchestrationInstanceCreatedEvent)(nil),          // 14: SubOrchestrationInstanceCreatedEvent
+	(*SubOrchestrationInstanceCompletedEvent)(nil),        // 15: SubOrchestrationInstanceCompletedEvent
+	(*SubOrchestrationInstanceFailedEvent)(nil),           // 16: SubOrchestrationInstanceFailedEvent
+	(*TimerCreatedEvent)(nil),                             // 17: TimerCreatedEvent
+	(*TimerFiredEvent)(nil),                               // 18: TimerFiredEvent
+	(*OrchestratorStartedEvent)(nil),                      // 19: OrchestratorStartedEvent
+	(*OrchestratorCompletedEvent)(nil),                    // 20: OrchestratorCompletedEvent
+	(*EventSentEvent)(nil),                                // 21: EventSentEvent
+	(*EventRaisedEvent)(nil),                              // 22: EventRaisedEvent
+	(*GenericEvent)(nil),                                  // 23: GenericEvent
+	(*HistoryStateEvent)(nil),                             // 24: HistoryStateEvent
+	(*ContinueAsNewEvent)(nil),                            // 25: ContinueAsNewEvent
+	(*ExecutionSuspendedEvent)(nil),                       // 26: ExecutionSuspendedEvent
+	(*ExecutionResumedEvent)(nil),                         // 27: ExecutionResumedEvent
+	(*EntityOperationSignaledEvent)(nil),                  // 28: EntityOperationSignaledEvent
+	(*EntityOperationCalledEvent)(nil),                    // 29: EntityOperationCalledEvent
+	(*EntityLockRequestedEvent)(nil),                      // 30: EntityLockRequestedEvent
+	(*EntityOperationCompletedEvent)(nil),                 // 31: EntityOperationCompletedEvent
+	(*EntityOperationFailedEvent)(nil),                    // 32: EntityOperationFailedEvent
+	(*EntityUnlockSentEvent)(nil),                         // 33: EntityUnlockSentEvent
+	(*EntityLockGrantedEvent)(nil),                        // 34: EntityLockGrantedEvent
+	(*ExecutionRewoundEvent)(nil),                         // 35: ExecutionRewoundEvent
+	(*HistoryEvent)(nil),                                  // 36: HistoryEvent
+	(*ScheduleTaskAction)(nil),                            // 37: ScheduleTaskAction
+	(*CreateSubOrchestrationAction)(nil),                  // 38: CreateSubOrchestrationAction
+	(*CreateTimerAction)(nil),                             // 39: CreateTimerAction
+	(*SendEventAction)(nil),                               // 40: SendEventAction
+	(*CompleteOrchestrationAction)(nil),                   // 41: CompleteOrchestrationAction
+	(*TerminateOrchestrationAction)(nil),                  // 42: TerminateOrchestrationAction
+	(*SendEntityMessageAction)(nil),                       // 43: SendEntityMessageAction
+	(*RewindOrchestrationAction)(nil),                     // 44: RewindOrchestrationAction
+	(*OrchestratorAction)(nil),                            // 45: OrchestratorAction
+	(*OrchestrationTraceContext)(nil),                     // 46: OrchestrationTraceContext
+	(*OrchestratorRequest)(nil),                           // 47: OrchestratorRequest
+	(*OrchestratorResponse)(nil),                          // 48: OrchestratorResponse
+	(*CreateInstanceRequest)(nil),                         // 49: CreateInstanceRequest
+	(*OrchestrationIdReusePolicy)(nil),                    // 50: OrchestrationIdReusePolicy
+	(*CreateInstanceResponse)(nil),                        // 51: CreateInstanceResponse
+	(*GetInstanceRequest)(nil),                            // 52: GetInstanceRequest
+	(*GetInstanceResponse)(nil),                           // 53: GetInstanceResponse
+	(*RewindInstanceRequest)(nil),                         // 54: RewindInstanceRequest
+	(*RewindInstanceResponse)(nil),                        // 55: RewindInstanceResponse
+	(*OrchestrationState)(nil),                            // 56: OrchestrationState
+	(*RaiseEventRequest)(nil),                             // 57: RaiseEventRequest
+	(*RaiseEventResponse)(nil),                            // 58: RaiseEventResponse
+	(*TerminateRequest)(nil),                              // 59: TerminateRequest
+	(*TerminateResponse)(nil),                             // 60: TerminateResponse
+	(*SuspendRequest)(nil),                                // 61: SuspendRequest
+	(*SuspendResponse)(nil),                               // 62: SuspendResponse
+	(*ResumeRequest)(nil),                                 // 63: ResumeRequest
+	(*ResumeResponse)(nil),                                // 64: ResumeResponse
+	(*QueryInstancesRequest)(nil),                         // 65: QueryInstancesRequest
+	(*InstanceQuery)(nil),                                 // 66: InstanceQuery
+	(*QueryInstancesResponse)(nil),                        // 67: QueryInstancesResponse
+	(*ListInstanceIdsRequest)(nil),                        // 68: ListInstanceIdsRequest
+	(*ListInstanceIdsResponse)(nil),                       // 69: ListInstanceIdsResponse
+	(*PurgeInstancesRequest)(nil),                         // 70: PurgeInstancesRequest
+	(*PurgeInstanceFilter)(nil),                           // 71: PurgeInstanceFilter
+	(*PurgeInstancesResponse)(nil),                        // 72: PurgeInstancesResponse
+	(*RestartInstanceRequest)(nil),                        // 73: RestartInstanceRequest
+	(*RestartInstanceResponse)(nil),                       // 74: RestartInstanceResponse
+	(*CreateTaskHubRequest)(nil),                          // 75: CreateTaskHubRequest
+	(*CreateTaskHubResponse)(nil),                         // 76: CreateTaskHubResponse
+	(*DeleteTaskHubRequest)(nil),                          // 77: DeleteTaskHubRequest
+	(*DeleteTaskHubResponse)(nil),                         // 78: DeleteTaskHubResponse
+	(*SignalEntityRequest)(nil),                           // 79: SignalEntityRequest
+	(*SignalEntityResponse)(nil),                          // 80: SignalEntityResponse
+	(*GetEntityRequest)(nil),                              // 81: GetEntityRequest
+	(*GetEntityResponse)(nil),                             // 82: GetEntityResponse
+	(*EntityQuery)(nil),                                   // 83: EntityQuery
+	(*QueryEntitiesRequest)(nil),                          // 84: QueryEntitiesRequest
+	(*QueryEntitiesResponse)(nil),                         // 85: QueryEntitiesResponse
+	(*EntityMetadata)(nil),                                // 86: EntityMetadata
+	(*CleanEntityStorageRequest)(nil),                     // 87: CleanEntityStorageRequest
+	(*CleanEntityStorageResponse)(nil),                    // 88: CleanEntityStorageResponse
+	(*OrchestratorEntityParameters)(nil),                  // 89: OrchestratorEntityParameters
+	(*EntityBatchRequest)(nil),                            // 90: EntityBatchRequest
+	(*EntityBatchResult)(nil),                             // 91: EntityBatchResult
+	(*EntityRequest)(nil),                                 // 92: EntityRequest
+	(*OperationRequest)(nil),                              // 93: OperationRequest
+	(*OperationResult)(nil),                               // 94: OperationResult
+	(*OperationInfo)(nil),                                 // 95: OperationInfo
+	(*OperationResultSuccess)(nil),                        // 96: OperationResultSuccess
+	(*OperationResultFailure)(nil),                        // 97: OperationResultFailure
+	(*OperationAction)(nil),                               // 98: OperationAction
+	(*SendSignalAction)(nil),                              // 99: SendSignalAction
+	(*StartNewOrchestrationAction)(nil),                   // 100: StartNewOrchestrationAction
+	(*AbandonActivityTaskRequest)(nil),                    // 101: AbandonActivityTaskRequest
+	(*AbandonActivityTaskResponse)(nil),                   // 102: AbandonActivityTaskResponse
+	(*AbandonOrchestrationTaskRequest)(nil),               // 103: AbandonOrchestrationTaskRequest
+	(*AbandonOrchestrationTaskResponse)(nil),              // 104: AbandonOrchestrationTaskResponse
+	(*AbandonEntityTaskRequest)(nil),                      // 105: AbandonEntityTaskRequest
+	(*AbandonEntityTaskResponse)(nil),                     // 106: AbandonEntityTaskResponse
+	(*SkipGracefulOrchestrationTerminationsRequest)(nil),  // 107: SkipGracefulOrchestrationTerminationsRequest
+	(*SkipGracefulOrchestrationTerminationsResponse)(nil), // 108: SkipGracefulOrchestrationTerminationsResponse
+	(*GetWorkItemsRequest)(nil),                           // 109: GetWorkItemsRequest
+	(*WorkItemFilters)(nil),                               // 110: WorkItemFilters
+	(*OrchestrationFilter)(nil),                           // 111: OrchestrationFilter
+	(*ActivityFilter)(nil),                                // 112: ActivityFilter
+	(*EntityFilter)(nil),                                  // 113: EntityFilter
+	(*WorkItem)(nil),                                      // 114: WorkItem
+	(*CompleteTaskResponse)(nil),                          // 115: CompleteTaskResponse
+	(*HealthPing)(nil),                                    // 116: HealthPing
+	(*StreamInstanceHistoryRequest)(nil),                  // 117: StreamInstanceHistoryRequest
+	(*HistoryChunk)(nil),                                  // 118: HistoryChunk
+	(*InstanceBatch)(nil),                                 // 119: InstanceBatch
+	nil,                                                   // 120: ActivityRequest.TagsEntry
+	nil,                                                   // 121: TaskFailureDetails.PropertiesEntry
+	nil,                                                   // 122: ExecutionStartedEvent.TagsEntry
+	nil,                                                   // 123: TaskScheduledEvent.TagsEntry
+	nil,                                                   // 124: SubOrchestrationInstanceCreatedEvent.TagsEntry
+	nil,                                                   // 125: ExecutionRewoundEvent.TagsEntry
+	nil,                                                   // 126: ScheduleTaskAction.TagsEntry
+	nil,                                                   // 127: CreateSubOrchestrationAction.TagsEntry
+	nil,                                                   // 128: CompleteOrchestrationAction.TagsEntry
+	nil,                                                   // 129: OrchestratorRequest.PropertiesEntry
+	nil,                                                   // 130: CreateInstanceRequest.TagsEntry
+	nil,                                                   // 131: OrchestrationState.TagsEntry
+	nil,                                                   // 132: EntityBatchRequest.PropertiesEntry
+	(*wrappers.StringValue)(nil),                          // 133: google.protobuf.StringValue
+	(*timestamp.Timestamp)(nil),                           // 134: google.protobuf.Timestamp
+	(*wrappers.Int32Value)(nil),                           // 135: google.protobuf.Int32Value
+	(*duration.Duration)(nil),                             // 136: google.protobuf.Duration
+	(*wrappers.BoolValue)(nil),                            // 137: google.protobuf.BoolValue
+	(*_struct.Value)(nil),                                 // 138: google.protobuf.Value
+	(*empty.Empty)(nil),                                   // 139: google.protobuf.Empty
 }
 var file_orchestrator_service_proto_depIdxs = []int32{
-	87,  // 0: OrchestrationInstance.executionId:type_name -> google.protobuf.StringValue
-	87,  // 1: ActivityRequest.version:type_name -> google.protobuf.StringValue
-	87,  // 2: ActivityRequest.input:type_name -> google.protobuf.StringValue
+	133, // 0: OrchestrationInstance.executionId:type_name -> google.protobuf.StringValue
+	133, // 1: ActivityRequest.version:type_name -> google.protobuf.StringValue
+	133, // 2: ActivityRequest.input:type_name -> google.protobuf.StringValue
 	2,   // 3: ActivityRequest.orchestrationInstance:type_name -> OrchestrationInstance
-	87,  // 4: ActivityResponse.result:type_name -> google.protobuf.StringValue
-	5,   // 5: ActivityResponse.failureDetails:type_name -> TaskFailureDetails
-	87,  // 6: TaskFailureDetails.stackTrace:type_name -> google.protobuf.StringValue
-	5,   // 7: TaskFailureDetails.innerFailure:type_name -> TaskFailureDetails
-	87,  // 8: ParentInstanceInfo.name:type_name -> google.protobuf.StringValue
-	87,  // 9: ParentInstanceInfo.version:type_name -> google.protobuf.StringValue
-	2,   // 10: ParentInstanceInfo.orchestrationInstance:type_name -> OrchestrationInstance
-	87,  // 11: TraceContext.traceState:type_name -> google.protobuf.StringValue
-	87,  // 12: ExecutionStartedEvent.version:type_name -> google.protobuf.StringValue
-	87,  // 13: ExecutionStartedEvent.input:type_name -> google.protobuf.StringValue
-	2,   // 14: ExecutionStartedEvent.orchestrationInstance:type_name -> OrchestrationInstance
-	6,   // 15: ExecutionStartedEvent.parentInstance:type_name -> ParentInstanceInfo
-	88,  // 16: ExecutionStartedEvent.scheduledStartTimestamp:type_name -> google.protobuf.Timestamp
-	7,   // 17: ExecutionStartedEvent.parentTraceContext:type_name -> TraceContext
-	87,  // 18: ExecutionStartedEvent.orchestrationSpanID:type_name -> google.protobuf.StringValue
-	0,   // 19: ExecutionCompletedEvent.orchestrationStatus:type_name -> OrchestrationStatus
-	87,  // 20: ExecutionCompletedEvent.result:type_name -> google.protobuf.StringValue
-	5,   // 21: ExecutionCompletedEvent.failureDetails:type_name -> TaskFailureDetails
-	87,  // 22: ExecutionTerminatedEvent.input:type_name -> google.protobuf.StringValue
-	87,  // 23: TaskScheduledEvent.version:type_name -> google.protobuf.StringValue
-	87,  // 24: TaskScheduledEvent.input:type_name -> google.protobuf.StringValue
-	7,   // 25: TaskScheduledEvent.parentTraceContext:type_name -> TraceContext
-	87,  // 26: TaskCompletedEvent.result:type_name -> google.protobuf.StringValue
-	5,   // 27: TaskFailedEvent.failureDetails:type_name -> TaskFailureDetails
-	87,  // 28: SubOrchestrationInstanceCreatedEvent.version:type_name -> google.protobuf.StringValue
-	87,  // 29: SubOrchestrationInstanceCreatedEvent.input:type_name -> google.protobuf.StringValue
-	7,   // 30: SubOrchestrationInstanceCreatedEvent.parentTraceContext:type_name -> TraceContext
-	87,  // 31: SubOrchestrationInstanceCompletedEvent.result:type_name -> google.protobuf.StringValue
-	5,   // 32: SubOrchestrationInstanceFailedEvent.failureDetails:type_name -> TaskFailureDetails
-	88,  // 33: TimerCreatedEvent.fireAt:type_name -> google.protobuf.Timestamp
-	88,  // 34: TimerFiredEvent.fireAt:type_name -> google.protobuf.Timestamp
-	87,  // 35: EventSentEvent.input:type_name -> google.protobuf.StringValue
-	87,  // 36: EventRaisedEvent.input:type_name -> google.protobuf.StringValue
-	87,  // 37: GenericEvent.data:type_name -> google.protobuf.StringValue
-	45,  // 38: HistoryStateEvent.orchestrationState:type_name -> OrchestrationState
-	87,  // 39: ContinueAsNewEvent.input:type_name -> google.protobuf.StringValue
-	87,  // 40: ExecutionSuspendedEvent.input:type_name -> google.protobuf.StringValue
-	87,  // 41: ExecutionResumedEvent.input:type_name -> google.protobuf.StringValue
-	88,  // 42: HistoryEvent.timestamp:type_name -> google.protobuf.Timestamp
-	8,   // 43: HistoryEvent.executionStarted:type_name -> ExecutionStartedEvent
-	9,   // 44: HistoryEvent.executionCompleted:type_name -> ExecutionCompletedEvent
-	10,  // 45: HistoryEvent.executionTerminated:type_name -> ExecutionTerminatedEvent
-	11,  // 46: HistoryEvent.taskScheduled:type_name -> TaskScheduledEvent
-	12,  // 47: HistoryEvent.taskCompleted:type_name -> TaskCompletedEvent
-	13,  // 48: HistoryEvent.taskFailed:type_name -> TaskFailedEvent
-	14,  // 49: HistoryEvent.subOrchestrationInstanceCreated:type_name -> SubOrchestrationInstanceCreatedEvent
-	15,  // 50: HistoryEvent.subOrchestrationInstanceCompleted:type_name -> SubOrchestrationInstanceCompletedEvent
-	16,  // 51: HistoryEvent.subOrchestrationInstanceFailed:type_name -> SubOrchestrationInstanceFailedEvent
-	17,  // 52: HistoryEvent.timerCreated:type_name -> TimerCreatedEvent
-	18,  // 53: HistoryEvent.timerFired:type_name -> TimerFiredEvent
-	19,  // 54: HistoryEvent.orchestratorStarted:type_name -> OrchestratorStartedEvent
-	20,  // 55: HistoryEvent.orchestratorCompleted:type_name -> OrchestratorCompletedEvent
-	21,  // 56: HistoryEvent.eventSent:type_name -> EventSentEvent
-	22,  // 57: HistoryEvent.eventRaised:type_name -> EventRaisedEvent
-	23,  // 58: HistoryEvent.genericEvent:type_name -> GenericEvent
-	24,  // 59: HistoryEvent.historyState:type_name -> HistoryStateEvent
-	25,  // 60: HistoryEvent.continueAsNew:type_name -> ContinueAsNewEvent
-	26,  // 61: HistoryEvent.executionSuspended:type_name -> ExecutionSuspendedEvent
-	27,  // 62: HistoryEvent.executionResumed:type_name -> ExecutionResumedEvent
-	87,  // 63: ScheduleTaskAction.version:type_name -> google.protobuf.StringValue
-	87,  // 64: ScheduleTaskAction.input:type_name -> google.protobuf.StringValue
-	87,  // 65: CreateSubOrchestrationAction.version:type_name -> google.protobuf.StringValue
-	87,  // 66: CreateSubOrchestrationAction.input:type_name -> google.protobuf.StringValue
-	88,  // 67: CreateTimerAction.fireAt:type_name -> google.protobuf.Timestamp
-	2,   // 68: SendEventAction.instance:type_name -> OrchestrationInstance
-	87,  // 69: SendEventAction.data:type_name -> google.protobuf.StringValue
-	0,   // 70: CompleteOrchestrationAction.orchestrationStatus:type_name -> OrchestrationStatus
-	87,  // 71: CompleteOrchestrationAction.result:type_name -> google.protobuf.StringValue
-	87,  // 72: CompleteOrchestrationAction.details:type_name -> google.protobuf.StringValue
-	87,  // 73: CompleteOrchestrationAction.newVersion:type_name -> google.protobuf.StringValue
-	28,  // 74: CompleteOrchestrationAction.carryoverEvents:type_name -> HistoryEvent
-	5,   // 75: CompleteOrchestrationAction.failureDetails:type_name -> TaskFailureDetails
-	87,  // 76: TerminateOrchestrationAction.reason:type_name -> google.protobuf.StringValue
-	29,  // 77: OrchestratorAction.scheduleTask:type_name -> ScheduleTaskAction
-	30,  // 78: OrchestratorAction.createSubOrchestration:type_name -> CreateSubOrchestrationAction
-	31,  // 79: OrchestratorAction.createTimer:type_name -> CreateTimerAction
-	32,  // 80: OrchestratorAction.sendEvent:type_name -> SendEventAction
-	33,  // 81: OrchestratorAction.completeOrchestration:type_name -> CompleteOrchestrationAction
-	34,  // 82: OrchestratorAction.terminateOrchestration:type_name -> TerminateOrchestrationAction
-	87,  // 83: OrchestratorRequest.executionId:type_name -> google.protobuf.StringValue
-	28,  // 84: OrchestratorRequest.pastEvents:type_name -> HistoryEvent
-	28,  // 85: OrchestratorRequest.newEvents:type_name -> HistoryEvent
-	74,  // 86: OrchestratorRequest.entityParameters:type_name -> OrchestratorEntityParameters
-	35,  // 87: OrchestratorResponse.actions:type_name -> OrchestratorAction
-	87,  // 88: OrchestratorResponse.customStatus:type_name -> google.protobuf.StringValue
-	87,  // 89: CreateInstanceRequest.version:type_name -> google.protobuf.StringValue
-	87,  // 90: CreateInstanceRequest.input:type_name -> google.protobuf.StringValue
-	88,  // 91: CreateInstanceRequest.scheduledStartTimestamp:type_name -> google.protobuf.Timestamp
-	39,  // 92: CreateInstanceRequest.orchestrationIdReusePolicy:type_name -> OrchestrationIdReusePolicy
-	0,   // 93: OrchestrationIdReusePolicy.operationStatus:type_name -> OrchestrationStatus
-	1,   // 94: OrchestrationIdReusePolicy.action:type_name -> CreateOrchestrationAction
-	45,  // 95: GetInstanceResponse.orchestrationState:type_name -> OrchestrationState
-	87,  // 96: RewindInstanceRequest.reason:type_name -> google.protobuf.StringValue
-	87,  // 97: OrchestrationState.version:type_name -> google.protobuf.StringValue
-	0,   // 98: OrchestrationState.orchestrationStatus:type_name -> OrchestrationStatus
-	88,  // 99: OrchestrationState.scheduledStartTimestamp:type_name -> google.protobuf.Timestamp
-	88,  // 100: OrchestrationState.createdTimestamp:type_name -> google.protobuf.Timestamp
-	88,  // 101: OrchestrationState.lastUpdatedTimestamp:type_name -> google.protobuf.Timestamp
-	87,  // 102: OrchestrationState.input:type_name -> google.protobuf.StringValue
-	87,  // 103: OrchestrationState.output:type_name -> google.protobuf.StringValue
-	87,  // 104: OrchestrationState.customStatus:type_name -> google.protobuf.StringValue
-	5,   // 105: OrchestrationState.failureDetails:type_name -> TaskFailureDetails
-	87,  // 106: OrchestrationState.parentInstanceId:type_name -> google.protobuf.StringValue
-	87,  // 107: RaiseEventRequest.input:type_name -> google.protobuf.StringValue
-	87,  // 108: TerminateRequest.output:type_name -> google.protobuf.StringValue
-	87,  // 109: SuspendRequest.reason:type_name -> google.protobuf.StringValue
-	87,  // 110: ResumeRequest.reason:type_name -> google.protobuf.StringValue
-	55,  // 111: QueryInstancesRequest.query:type_name -> InstanceQuery
-	0,   // 112: InstanceQuery.runtimeStatus:type_name -> OrchestrationStatus
-	88,  // 113: InstanceQuery.createdTimeFrom:type_name -> google.protobuf.Timestamp
-	88,  // 114: InstanceQuery.createdTimeTo:type_name -> google.protobuf.Timestamp
-	87,  // 115: InstanceQuery.taskHubNames:type_name -> google.protobuf.StringValue
-	87,  // 116: InstanceQuery.continuationToken:type_name -> google.protobuf.StringValue
-	87,  // 117: InstanceQuery.instanceIdPrefix:type_name -> google.protobuf.StringValue
-	45,  // 118: QueryInstancesResponse.orchestrationState:type_name -> OrchestrationState
-	87,  // 119: QueryInstancesResponse.continuationToken:type_name -> google.protobuf.StringValue
-	58,  // 120: PurgeInstancesRequest.purgeInstanceFilter:type_name -> PurgeInstanceFilter
-	88,  // 121: PurgeInstanceFilter.createdTimeFrom:type_name -> google.protobuf.Timestamp
-	88,  // 122: PurgeInstanceFilter.createdTimeTo:type_name -> google.protobuf.Timestamp
-	0,   // 123: PurgeInstanceFilter.runtimeStatus:type_name -> OrchestrationStatus
-	87,  // 124: SignalEntityRequest.input:type_name -> google.protobuf.StringValue
-	88,  // 125: SignalEntityRequest.scheduledTime:type_name -> google.protobuf.Timestamp
-	71,  // 126: GetEntityResponse.entity:type_name -> EntityMetadata
-	87,  // 127: EntityQuery.instanceIdStartsWith:type_name -> google.protobuf.StringValue
-	88,  // 128: EntityQuery.lastModifiedFrom:type_name -> google.protobuf.Timestamp
-	88,  // 129: EntityQuery.lastModifiedTo:type_name -> google.protobuf.Timestamp
-	89,  // 130: EntityQuery.pageSize:type_name -> google.protobuf.Int32Value
-	87,  // 131: EntityQuery.continuationToken:type_name -> google.protobuf.StringValue
-	68,  // 132: QueryEntitiesRequest.query:type_name -> EntityQuery
-	71,  // 133: QueryEntitiesResponse.entities:type_name -> EntityMetadata
-	87,  // 134: QueryEntitiesResponse.continuationToken:type_name -> google.protobuf.StringValue
-	88,  // 135: EntityMetadata.lastModifiedTime:type_name -> google.protobuf.Timestamp
-	87,  // 136: EntityMetadata.lockedBy:type_name -> google.protobuf.StringValue
-	87,  // 137: EntityMetadata.serializedState:type_name -> google.protobuf.StringValue
-	87,  // 138: CleanEntityStorageRequest.continuationToken:type_name -> google.protobuf.StringValue
-	87,  // 139: CleanEntityStorageResponse.continuationToken:type_name -> google.protobuf.StringValue
-	90,  // 140: OrchestratorEntityParameters.entityMessageReorderWindow:type_name -> google.protobuf.Duration
-	87,  // 141: EntityBatchRequest.entityState:type_name -> google.protobuf.StringValue
-	77,  // 142: EntityBatchRequest.operations:type_name -> OperationRequest
-	78,  // 143: EntityBatchResult.results:type_name -> OperationResult
-	81,  // 144: EntityBatchResult.actions:type_name -> OperationAction
-	87,  // 145: EntityBatchResult.entityState:type_name -> google.protobuf.StringValue
-	5,   // 146: EntityBatchResult.failureDetails:type_name -> TaskFailureDetails
-	87,  // 147: OperationRequest.input:type_name -> google.protobuf.StringValue
-	79,  // 148: OperationResult.success:type_name -> OperationResultSuccess
-	80,  // 149: OperationResult.failure:type_name -> OperationResultFailure
-	87,  // 150: OperationResultSuccess.result:type_name -> google.protobuf.StringValue
-	5,   // 151: OperationResultFailure.failureDetails:type_name -> TaskFailureDetails
-	82,  // 152: OperationAction.sendSignal:type_name -> SendSignalAction
-	83,  // 153: OperationAction.startNewOrchestration:type_name -> StartNewOrchestrationAction
-	87,  // 154: SendSignalAction.input:type_name -> google.protobuf.StringValue
-	88,  // 155: SendSignalAction.scheduledTime:type_name -> google.protobuf.Timestamp
-	87,  // 156: StartNewOrchestrationAction.version:type_name -> google.protobuf.StringValue
-	87,  // 157: StartNewOrchestrationAction.input:type_name -> google.protobuf.StringValue
-	88,  // 158: StartNewOrchestrationAction.scheduledTime:type_name -> google.protobuf.Timestamp
-	36,  // 159: WorkItem.orchestratorRequest:type_name -> OrchestratorRequest
-	3,   // 160: WorkItem.activityRequest:type_name -> ActivityRequest
-	75,  // 161: WorkItem.entityRequest:type_name -> EntityBatchRequest
-	91,  // 162: TaskHubSidecarService.Hello:input_type -> google.protobuf.Empty
-	38,  // 163: TaskHubSidecarService.StartInstance:input_type -> CreateInstanceRequest
-	41,  // 164: TaskHubSidecarService.GetInstance:input_type -> GetInstanceRequest
-	43,  // 165: TaskHubSidecarService.RewindInstance:input_type -> RewindInstanceRequest
-	41,  // 166: TaskHubSidecarService.WaitForInstanceStart:input_type -> GetInstanceRequest
-	41,  // 167: TaskHubSidecarService.WaitForInstanceCompletion:input_type -> GetInstanceRequest
-	46,  // 168: TaskHubSidecarService.RaiseEvent:input_type -> RaiseEventRequest
-	48,  // 169: TaskHubSidecarService.TerminateInstance:input_type -> TerminateRequest
-	50,  // 170: TaskHubSidecarService.SuspendInstance:input_type -> SuspendRequest
-	52,  // 171: TaskHubSidecarService.ResumeInstance:input_type -> ResumeRequest
-	54,  // 172: TaskHubSidecarService.QueryInstances:input_type -> QueryInstancesRequest
-	57,  // 173: TaskHubSidecarService.PurgeInstances:input_type -> PurgeInstancesRequest
-	84,  // 174: TaskHubSidecarService.GetWorkItems:input_type -> GetWorkItemsRequest
-	4,   // 175: TaskHubSidecarService.CompleteActivityTask:input_type -> ActivityResponse
-	37,  // 176: TaskHubSidecarService.CompleteOrchestratorTask:input_type -> OrchestratorResponse
-	76,  // 177: TaskHubSidecarService.CompleteEntityTask:input_type -> EntityBatchResult
-	60,  // 178: TaskHubSidecarService.CreateTaskHub:input_type -> CreateTaskHubRequest
-	62,  // 179: TaskHubSidecarService.DeleteTaskHub:input_type -> DeleteTaskHubRequest
-	64,  // 180: TaskHubSidecarService.SignalEntity:input_type -> SignalEntityRequest
-	66,  // 181: TaskHubSidecarService.GetEntity:input_type -> GetEntityRequest
-	69,  // 182: TaskHubSidecarService.QueryEntities:input_type -> QueryEntitiesRequest
-	72,  // 183: TaskHubSidecarService.CleanEntityStorage:input_type -> CleanEntityStorageRequest
-	91,  // 184: TaskHubSidecarService.Hello:output_type -> google.protobuf.Empty
-	40,  // 185: TaskHubSidecarService.StartInstance:output_type -> CreateInstanceResponse
-	42,  // 186: TaskHubSidecarService.GetInstance:output_type -> GetInstanceResponse
-	44,  // 187: TaskHubSidecarService.RewindInstance:output_type -> RewindInstanceResponse
-	42,  // 188: TaskHubSidecarService.WaitForInstanceStart:output_type -> GetInstanceResponse
-	42,  // 189: TaskHubSidecarService.WaitForInstanceCompletion:output_type -> GetInstanceResponse
-	47,  // 190: TaskHubSidecarService.RaiseEvent:output_type -> RaiseEventResponse
-	49,  // 191: TaskHubSidecarService.TerminateInstance:output_type -> TerminateResponse
-	51,  // 192: TaskHubSidecarService.SuspendInstance:output_type -> SuspendResponse
-	53,  // 193: TaskHubSidecarService.ResumeInstance:output_type -> ResumeResponse
-	56,  // 194: TaskHubSidecarService.QueryInstances:output_type -> QueryInstancesResponse
-	59,  // 195: TaskHubSidecarService.PurgeInstances:output_type -> PurgeInstancesResponse
-	85,  // 196: TaskHubSidecarService.GetWorkItems:output_type -> WorkItem
-	86,  // 197: TaskHubSidecarService.CompleteActivityTask:output_type -> CompleteTaskResponse
-	86,  // 198: TaskHubSidecarService.CompleteOrchestratorTask:output_type -> CompleteTaskResponse
-	86,  // 199: TaskHubSidecarService.CompleteEntityTask:output_type -> CompleteTaskResponse
-	61,  // 200: TaskHubSidecarService.CreateTaskHub:output_type -> CreateTaskHubResponse
-	63,  // 201: TaskHubSidecarService.DeleteTaskHub:output_type -> DeleteTaskHubResponse
-	65,  // 202: TaskHubSidecarService.SignalEntity:output_type -> SignalEntityResponse
-	67,  // 203: TaskHubSidecarService.GetEntity:output_type -> GetEntityResponse
-	70,  // 204: TaskHubSidecarService.QueryEntities:output_type -> QueryEntitiesResponse
-	73,  // 205: TaskHubSidecarService.CleanEntityStorage:output_type -> CleanEntityStorageResponse
-	184, // [184:206] is the sub-list for method output_type
-	162, // [162:184] is the sub-list for method input_type
-	162, // [162:162] is the sub-list for extension type_name
-	162, // [162:162] is the sub-list for extension extendee
-	0,   // [0:162] is the sub-list for field type_name
+	7,   // 4: ActivityRequest.parentTraceContext:type_name -> TraceContext
+	120, // 5: ActivityRequest.tags:type_name -> ActivityRequest.TagsEntry
+	133, // 6: ActivityResponse.result:type_name -> google.protobuf.StringValue
+	5,   // 7: ActivityResponse.failureDetails:type_name -> TaskFailureDetails
+	133, // 8: TaskFailureDetails.stackTrace:type_name -> google.protobuf.StringValue
+	5,   // 9: TaskFailureDetails.innerFailure:type_name -> TaskFailureDetails
+	121, // 10: TaskFailureDetails.properties:type_name -> TaskFailureDetails.PropertiesEntry
+	133, // 11: ParentInstanceInfo.name:type_name -> google.protobuf.StringValue
+	133, // 12: ParentInstanceInfo.version:type_name -> google.protobuf.StringValue
+	2,   // 13: ParentInstanceInfo.orchestrationInstance:type_name -> OrchestrationInstance
+	133, // 14: TraceContext.traceState:type_name -> google.protobuf.StringValue
+	133, // 15: ExecutionStartedEvent.version:type_name -> google.protobuf.StringValue
+	133, // 16: ExecutionStartedEvent.input:type_name -> google.protobuf.StringValue
+	2,   // 17: ExecutionStartedEvent.orchestrationInstance:type_name -> OrchestrationInstance
+	6,   // 18: ExecutionStartedEvent.parentInstance:type_name -> ParentInstanceInfo
+	134, // 19: ExecutionStartedEvent.scheduledStartTimestamp:type_name -> google.protobuf.Timestamp
+	7,   // 20: ExecutionStartedEvent.parentTraceContext:type_name -> TraceContext
+	133, // 21: ExecutionStartedEvent.orchestrationSpanID:type_name -> google.protobuf.StringValue
+	122, // 22: ExecutionStartedEvent.tags:type_name -> ExecutionStartedEvent.TagsEntry
+	0,   // 23: ExecutionCompletedEvent.orchestrationStatus:type_name -> OrchestrationStatus
+	133, // 24: ExecutionCompletedEvent.result:type_name -> google.protobuf.StringValue
+	5,   // 25: ExecutionCompletedEvent.failureDetails:type_name -> TaskFailureDetails
+	133, // 26: ExecutionTerminatedEvent.input:type_name -> google.protobuf.StringValue
+	133, // 27: TaskScheduledEvent.version:type_name -> google.protobuf.StringValue
+	133, // 28: TaskScheduledEvent.input:type_name -> google.protobuf.StringValue
+	7,   // 29: TaskScheduledEvent.parentTraceContext:type_name -> TraceContext
+	123, // 30: TaskScheduledEvent.tags:type_name -> TaskScheduledEvent.TagsEntry
+	133, // 31: TaskCompletedEvent.result:type_name -> google.protobuf.StringValue
+	5,   // 32: TaskFailedEvent.failureDetails:type_name -> TaskFailureDetails
+	133, // 33: SubOrchestrationInstanceCreatedEvent.version:type_name -> google.protobuf.StringValue
+	133, // 34: SubOrchestrationInstanceCreatedEvent.input:type_name -> google.protobuf.StringValue
+	7,   // 35: SubOrchestrationInstanceCreatedEvent.parentTraceContext:type_name -> TraceContext
+	124, // 36: SubOrchestrationInstanceCreatedEvent.tags:type_name -> SubOrchestrationInstanceCreatedEvent.TagsEntry
+	133, // 37: SubOrchestrationInstanceCompletedEvent.result:type_name -> google.protobuf.StringValue
+	5,   // 38: SubOrchestrationInstanceFailedEvent.failureDetails:type_name -> TaskFailureDetails
+	134, // 39: TimerCreatedEvent.fireAt:type_name -> google.protobuf.Timestamp
+	134, // 40: TimerFiredEvent.fireAt:type_name -> google.protobuf.Timestamp
+	133, // 41: EventSentEvent.input:type_name -> google.protobuf.StringValue
+	133, // 42: EventRaisedEvent.input:type_name -> google.protobuf.StringValue
+	133, // 43: GenericEvent.data:type_name -> google.protobuf.StringValue
+	56,  // 44: HistoryStateEvent.orchestrationState:type_name -> OrchestrationState
+	133, // 45: ContinueAsNewEvent.input:type_name -> google.protobuf.StringValue
+	133, // 46: ExecutionSuspendedEvent.input:type_name -> google.protobuf.StringValue
+	133, // 47: ExecutionResumedEvent.input:type_name -> google.protobuf.StringValue
+	134, // 48: EntityOperationSignaledEvent.scheduledTime:type_name -> google.protobuf.Timestamp
+	133, // 49: EntityOperationSignaledEvent.input:type_name -> google.protobuf.StringValue
+	133, // 50: EntityOperationSignaledEvent.targetInstanceId:type_name -> google.protobuf.StringValue
+	134, // 51: EntityOperationCalledEvent.scheduledTime:type_name -> google.protobuf.Timestamp
+	133, // 52: EntityOperationCalledEvent.input:type_name -> google.protobuf.StringValue
+	133, // 53: EntityOperationCalledEvent.parentInstanceId:type_name -> google.protobuf.StringValue
+	133, // 54: EntityOperationCalledEvent.parentExecutionId:type_name -> google.protobuf.StringValue
+	133, // 55: EntityOperationCalledEvent.targetInstanceId:type_name -> google.protobuf.StringValue
+	133, // 56: EntityLockRequestedEvent.parentInstanceId:type_name -> google.protobuf.StringValue
+	133, // 57: EntityOperationCompletedEvent.output:type_name -> google.protobuf.StringValue
+	5,   // 58: EntityOperationFailedEvent.failureDetails:type_name -> TaskFailureDetails
+	133, // 59: EntityUnlockSentEvent.parentInstanceId:type_name -> google.protobuf.StringValue
+	133, // 60: EntityUnlockSentEvent.targetInstanceId:type_name -> google.protobuf.StringValue
+	133, // 61: ExecutionRewoundEvent.reason:type_name -> google.protobuf.StringValue
+	133, // 62: ExecutionRewoundEvent.parentExecutionId:type_name -> google.protobuf.StringValue
+	133, // 63: ExecutionRewoundEvent.instanceId:type_name -> google.protobuf.StringValue
+	7,   // 64: ExecutionRewoundEvent.parentTraceContext:type_name -> TraceContext
+	133, // 65: ExecutionRewoundEvent.name:type_name -> google.protobuf.StringValue
+	133, // 66: ExecutionRewoundEvent.version:type_name -> google.protobuf.StringValue
+	133, // 67: ExecutionRewoundEvent.input:type_name -> google.protobuf.StringValue
+	6,   // 68: ExecutionRewoundEvent.parentInstance:type_name -> ParentInstanceInfo
+	125, // 69: ExecutionRewoundEvent.tags:type_name -> ExecutionRewoundEvent.TagsEntry
+	134, // 70: HistoryEvent.timestamp:type_name -> google.protobuf.Timestamp
+	8,   // 71: HistoryEvent.executionStarted:type_name -> ExecutionStartedEvent
+	9,   // 72: HistoryEvent.executionCompleted:type_name -> ExecutionCompletedEvent
+	10,  // 73: HistoryEvent.executionTerminated:type_name -> ExecutionTerminatedEvent
+	11,  // 74: HistoryEvent.taskScheduled:type_name -> TaskScheduledEvent
+	12,  // 75: HistoryEvent.taskCompleted:type_name -> TaskCompletedEvent
+	13,  // 76: HistoryEvent.taskFailed:type_name -> TaskFailedEvent
+	14,  // 77: HistoryEvent.subOrchestrationInstanceCreated:type_name -> SubOrchestrationInstanceCreatedEvent
+	15,  // 78: HistoryEvent.subOrchestrationInstanceCompleted:type_name -> SubOrchestrationInstanceCompletedEvent
+	16,  // 79: HistoryEvent.subOrchestrationInstanceFailed:type_name -> SubOrchestrationInstanceFailedEvent
+	17,  // 80: HistoryEvent.timerCreated:type_name -> TimerCreatedEvent
+	18,  // 81: HistoryEvent.timerFired:type_name -> TimerFiredEvent
+	19,  // 82: HistoryEvent.orchestratorStarted:type_name -> OrchestratorStartedEvent
+	20,  // 83: HistoryEvent.orchestratorCompleted:type_name -> OrchestratorCompletedEvent
+	21,  // 84: HistoryEvent.eventSent:type_name -> EventSentEvent
+	22,  // 85: HistoryEvent.eventRaised:type_name -> EventRaisedEvent
+	23,  // 86: HistoryEvent.genericEvent:type_name -> GenericEvent
+	24,  // 87: HistoryEvent.historyState:type_name -> HistoryStateEvent
+	25,  // 88: HistoryEvent.continueAsNew:type_name -> ContinueAsNewEvent
+	26,  // 89: HistoryEvent.executionSuspended:type_name -> ExecutionSuspendedEvent
+	27,  // 90: HistoryEvent.executionResumed:type_name -> ExecutionResumedEvent
+	28,  // 91: HistoryEvent.entityOperationSignaled:type_name -> EntityOperationSignaledEvent
+	29,  // 92: HistoryEvent.entityOperationCalled:type_name -> EntityOperationCalledEvent
+	31,  // 93: HistoryEvent.entityOperationCompleted:type_name -> EntityOperationCompletedEvent
+	32,  // 94: HistoryEvent.entityOperationFailed:type_name -> EntityOperationFailedEvent
+	30,  // 95: HistoryEvent.entityLockRequested:type_name -> EntityLockRequestedEvent
+	34,  // 96: HistoryEvent.entityLockGranted:type_name -> EntityLockGrantedEvent
+	33,  // 97: HistoryEvent.entityUnlockSent:type_name -> EntityUnlockSentEvent
+	35,  // 98: HistoryEvent.executionRewound:type_name -> ExecutionRewoundEvent
+	133, // 99: ScheduleTaskAction.version:type_name -> google.protobuf.StringValue
+	133, // 100: ScheduleTaskAction.input:type_name -> google.protobuf.StringValue
+	126, // 101: ScheduleTaskAction.tags:type_name -> ScheduleTaskAction.TagsEntry
+	7,   // 102: ScheduleTaskAction.parentTraceContext:type_name -> TraceContext
+	133, // 103: CreateSubOrchestrationAction.version:type_name -> google.protobuf.StringValue
+	133, // 104: CreateSubOrchestrationAction.input:type_name -> google.protobuf.StringValue
+	7,   // 105: CreateSubOrchestrationAction.parentTraceContext:type_name -> TraceContext
+	127, // 106: CreateSubOrchestrationAction.tags:type_name -> CreateSubOrchestrationAction.TagsEntry
+	134, // 107: CreateTimerAction.fireAt:type_name -> google.protobuf.Timestamp
+	2,   // 108: SendEventAction.instance:type_name -> OrchestrationInstance
+	133, // 109: SendEventAction.data:type_name -> google.protobuf.StringValue
+	0,   // 110: CompleteOrchestrationAction.orchestrationStatus:type_name -> OrchestrationStatus
+	133, // 111: CompleteOrchestrationAction.result:type_name -> google.protobuf.StringValue
+	133, // 112: CompleteOrchestrationAction.details:type_name -> google.protobuf.StringValue
+	133, // 113: CompleteOrchestrationAction.newVersion:type_name -> google.protobuf.StringValue
+	36,  // 114: CompleteOrchestrationAction.carryoverEvents:type_name -> HistoryEvent
+	5,   // 115: CompleteOrchestrationAction.failureDetails:type_name -> TaskFailureDetails
+	128, // 116: CompleteOrchestrationAction.tags:type_name -> CompleteOrchestrationAction.TagsEntry
+	133, // 117: TerminateOrchestrationAction.reason:type_name -> google.protobuf.StringValue
+	28,  // 118: SendEntityMessageAction.entityOperationSignaled:type_name -> EntityOperationSignaledEvent
+	29,  // 119: SendEntityMessageAction.entityOperationCalled:type_name -> EntityOperationCalledEvent
+	30,  // 120: SendEntityMessageAction.entityLockRequested:type_name -> EntityLockRequestedEvent
+	33,  // 121: SendEntityMessageAction.entityUnlockSent:type_name -> EntityUnlockSentEvent
+	36,  // 122: RewindOrchestrationAction.newHistory:type_name -> HistoryEvent
+	37,  // 123: OrchestratorAction.scheduleTask:type_name -> ScheduleTaskAction
+	38,  // 124: OrchestratorAction.createSubOrchestration:type_name -> CreateSubOrchestrationAction
+	39,  // 125: OrchestratorAction.createTimer:type_name -> CreateTimerAction
+	40,  // 126: OrchestratorAction.sendEvent:type_name -> SendEventAction
+	41,  // 127: OrchestratorAction.completeOrchestration:type_name -> CompleteOrchestrationAction
+	42,  // 128: OrchestratorAction.terminateOrchestration:type_name -> TerminateOrchestrationAction
+	43,  // 129: OrchestratorAction.sendEntityMessage:type_name -> SendEntityMessageAction
+	44,  // 130: OrchestratorAction.rewindOrchestration:type_name -> RewindOrchestrationAction
+	133, // 131: OrchestrationTraceContext.spanID:type_name -> google.protobuf.StringValue
+	134, // 132: OrchestrationTraceContext.spanStartTime:type_name -> google.protobuf.Timestamp
+	133, // 133: OrchestratorRequest.executionId:type_name -> google.protobuf.StringValue
+	36,  // 134: OrchestratorRequest.pastEvents:type_name -> HistoryEvent
+	36,  // 135: OrchestratorRequest.newEvents:type_name -> HistoryEvent
+	89,  // 136: OrchestratorRequest.entityParameters:type_name -> OrchestratorEntityParameters
+	129, // 137: OrchestratorRequest.properties:type_name -> OrchestratorRequest.PropertiesEntry
+	46,  // 138: OrchestratorRequest.orchestrationTraceContext:type_name -> OrchestrationTraceContext
+	45,  // 139: OrchestratorResponse.actions:type_name -> OrchestratorAction
+	133, // 140: OrchestratorResponse.customStatus:type_name -> google.protobuf.StringValue
+	135, // 141: OrchestratorResponse.numEventsProcessed:type_name -> google.protobuf.Int32Value
+	46,  // 142: OrchestratorResponse.orchestrationTraceContext:type_name -> OrchestrationTraceContext
+	135, // 143: OrchestratorResponse.chunkIndex:type_name -> google.protobuf.Int32Value
+	133, // 144: CreateInstanceRequest.version:type_name -> google.protobuf.StringValue
+	133, // 145: CreateInstanceRequest.input:type_name -> google.protobuf.StringValue
+	134, // 146: CreateInstanceRequest.scheduledStartTimestamp:type_name -> google.protobuf.Timestamp
+	50,  // 147: CreateInstanceRequest.orchestrationIdReusePolicy:type_name -> OrchestrationIdReusePolicy
+	133, // 148: CreateInstanceRequest.executionId:type_name -> google.protobuf.StringValue
+	130, // 149: CreateInstanceRequest.tags:type_name -> CreateInstanceRequest.TagsEntry
+	7,   // 150: CreateInstanceRequest.parentTraceContext:type_name -> TraceContext
+	134, // 151: CreateInstanceRequest.requestTime:type_name -> google.protobuf.Timestamp
+	0,   // 152: OrchestrationIdReusePolicy.replaceableStatus:type_name -> OrchestrationStatus
+	56,  // 153: GetInstanceResponse.orchestrationState:type_name -> OrchestrationState
+	133, // 154: RewindInstanceRequest.reason:type_name -> google.protobuf.StringValue
+	133, // 155: OrchestrationState.version:type_name -> google.protobuf.StringValue
+	0,   // 156: OrchestrationState.orchestrationStatus:type_name -> OrchestrationStatus
+	134, // 157: OrchestrationState.scheduledStartTimestamp:type_name -> google.protobuf.Timestamp
+	134, // 158: OrchestrationState.createdTimestamp:type_name -> google.protobuf.Timestamp
+	134, // 159: OrchestrationState.lastUpdatedTimestamp:type_name -> google.protobuf.Timestamp
+	133, // 160: OrchestrationState.input:type_name -> google.protobuf.StringValue
+	133, // 161: OrchestrationState.output:type_name -> google.protobuf.StringValue
+	133, // 162: OrchestrationState.customStatus:type_name -> google.protobuf.StringValue
+	5,   // 163: OrchestrationState.failureDetails:type_name -> TaskFailureDetails
+	133, // 164: OrchestrationState.executionId:type_name -> google.protobuf.StringValue
+	134, // 165: OrchestrationState.completedTimestamp:type_name -> google.protobuf.Timestamp
+	133, // 166: OrchestrationState.parentInstanceId:type_name -> google.protobuf.StringValue
+	131, // 167: OrchestrationState.tags:type_name -> OrchestrationState.TagsEntry
+	133, // 168: RaiseEventRequest.input:type_name -> google.protobuf.StringValue
+	133, // 169: TerminateRequest.output:type_name -> google.protobuf.StringValue
+	133, // 170: SuspendRequest.reason:type_name -> google.protobuf.StringValue
+	133, // 171: ResumeRequest.reason:type_name -> google.protobuf.StringValue
+	66,  // 172: QueryInstancesRequest.query:type_name -> InstanceQuery
+	0,   // 173: InstanceQuery.runtimeStatus:type_name -> OrchestrationStatus
+	134, // 174: InstanceQuery.createdTimeFrom:type_name -> google.protobuf.Timestamp
+	134, // 175: InstanceQuery.createdTimeTo:type_name -> google.protobuf.Timestamp
+	133, // 176: InstanceQuery.taskHubNames:type_name -> google.protobuf.StringValue
+	133, // 177: InstanceQuery.continuationToken:type_name -> google.protobuf.StringValue
+	133, // 178: InstanceQuery.instanceIdPrefix:type_name -> google.protobuf.StringValue
+	56,  // 179: QueryInstancesResponse.orchestrationState:type_name -> OrchestrationState
+	133, // 180: QueryInstancesResponse.continuationToken:type_name -> google.protobuf.StringValue
+	0,   // 181: ListInstanceIdsRequest.runtimeStatus:type_name -> OrchestrationStatus
+	134, // 182: ListInstanceIdsRequest.completedTimeFrom:type_name -> google.protobuf.Timestamp
+	134, // 183: ListInstanceIdsRequest.completedTimeTo:type_name -> google.protobuf.Timestamp
+	133, // 184: ListInstanceIdsRequest.lastInstanceKey:type_name -> google.protobuf.StringValue
+	133, // 185: ListInstanceIdsResponse.lastInstanceKey:type_name -> google.protobuf.StringValue
+	71,  // 186: PurgeInstancesRequest.purgeInstanceFilter:type_name -> PurgeInstanceFilter
+	119, // 187: PurgeInstancesRequest.instanceBatch:type_name -> InstanceBatch
+	134, // 188: PurgeInstanceFilter.createdTimeFrom:type_name -> google.protobuf.Timestamp
+	134, // 189: PurgeInstanceFilter.createdTimeTo:type_name -> google.protobuf.Timestamp
+	0,   // 190: PurgeInstanceFilter.runtimeStatus:type_name -> OrchestrationStatus
+	136, // 191: PurgeInstanceFilter.timeout:type_name -> google.protobuf.Duration
+	137, // 192: PurgeInstancesResponse.isComplete:type_name -> google.protobuf.BoolValue
+	133, // 193: SignalEntityRequest.input:type_name -> google.protobuf.StringValue
+	134, // 194: SignalEntityRequest.scheduledTime:type_name -> google.protobuf.Timestamp
+	7,   // 195: SignalEntityRequest.parentTraceContext:type_name -> TraceContext
+	134, // 196: SignalEntityRequest.requestTime:type_name -> google.protobuf.Timestamp
+	86,  // 197: GetEntityResponse.entity:type_name -> EntityMetadata
+	133, // 198: EntityQuery.instanceIdStartsWith:type_name -> google.protobuf.StringValue
+	134, // 199: EntityQuery.lastModifiedFrom:type_name -> google.protobuf.Timestamp
+	134, // 200: EntityQuery.lastModifiedTo:type_name -> google.protobuf.Timestamp
+	135, // 201: EntityQuery.pageSize:type_name -> google.protobuf.Int32Value
+	133, // 202: EntityQuery.continuationToken:type_name -> google.protobuf.StringValue
+	83,  // 203: QueryEntitiesRequest.query:type_name -> EntityQuery
+	86,  // 204: QueryEntitiesResponse.entities:type_name -> EntityMetadata
+	133, // 205: QueryEntitiesResponse.continuationToken:type_name -> google.protobuf.StringValue
+	134, // 206: EntityMetadata.lastModifiedTime:type_name -> google.protobuf.Timestamp
+	133, // 207: EntityMetadata.lockedBy:type_name -> google.protobuf.StringValue
+	133, // 208: EntityMetadata.serializedState:type_name -> google.protobuf.StringValue
+	133, // 209: CleanEntityStorageRequest.continuationToken:type_name -> google.protobuf.StringValue
+	133, // 210: CleanEntityStorageResponse.continuationToken:type_name -> google.protobuf.StringValue
+	136, // 211: OrchestratorEntityParameters.entityMessageReorderWindow:type_name -> google.protobuf.Duration
+	133, // 212: EntityBatchRequest.entityState:type_name -> google.protobuf.StringValue
+	93,  // 213: EntityBatchRequest.operations:type_name -> OperationRequest
+	132, // 214: EntityBatchRequest.properties:type_name -> EntityBatchRequest.PropertiesEntry
+	94,  // 215: EntityBatchResult.results:type_name -> OperationResult
+	98,  // 216: EntityBatchResult.actions:type_name -> OperationAction
+	133, // 217: EntityBatchResult.entityState:type_name -> google.protobuf.StringValue
+	5,   // 218: EntityBatchResult.failureDetails:type_name -> TaskFailureDetails
+	95,  // 219: EntityBatchResult.operationInfos:type_name -> OperationInfo
+	133, // 220: EntityRequest.entityState:type_name -> google.protobuf.StringValue
+	36,  // 221: EntityRequest.operationRequests:type_name -> HistoryEvent
+	133, // 222: OperationRequest.input:type_name -> google.protobuf.StringValue
+	7,   // 223: OperationRequest.traceContext:type_name -> TraceContext
+	96,  // 224: OperationResult.success:type_name -> OperationResultSuccess
+	97,  // 225: OperationResult.failure:type_name -> OperationResultFailure
+	2,   // 226: OperationInfo.responseDestination:type_name -> OrchestrationInstance
+	133, // 227: OperationResultSuccess.result:type_name -> google.protobuf.StringValue
+	134, // 228: OperationResultSuccess.startTimeUtc:type_name -> google.protobuf.Timestamp
+	134, // 229: OperationResultSuccess.endTimeUtc:type_name -> google.protobuf.Timestamp
+	5,   // 230: OperationResultFailure.failureDetails:type_name -> TaskFailureDetails
+	134, // 231: OperationResultFailure.startTimeUtc:type_name -> google.protobuf.Timestamp
+	134, // 232: OperationResultFailure.endTimeUtc:type_name -> google.protobuf.Timestamp
+	99,  // 233: OperationAction.sendSignal:type_name -> SendSignalAction
+	100, // 234: OperationAction.startNewOrchestration:type_name -> StartNewOrchestrationAction
+	133, // 235: SendSignalAction.input:type_name -> google.protobuf.StringValue
+	134, // 236: SendSignalAction.scheduledTime:type_name -> google.protobuf.Timestamp
+	134, // 237: SendSignalAction.requestTime:type_name -> google.protobuf.Timestamp
+	7,   // 238: SendSignalAction.parentTraceContext:type_name -> TraceContext
+	133, // 239: StartNewOrchestrationAction.version:type_name -> google.protobuf.StringValue
+	133, // 240: StartNewOrchestrationAction.input:type_name -> google.protobuf.StringValue
+	134, // 241: StartNewOrchestrationAction.scheduledTime:type_name -> google.protobuf.Timestamp
+	134, // 242: StartNewOrchestrationAction.requestTime:type_name -> google.protobuf.Timestamp
+	7,   // 243: StartNewOrchestrationAction.parentTraceContext:type_name -> TraceContext
+	119, // 244: SkipGracefulOrchestrationTerminationsRequest.instanceBatch:type_name -> InstanceBatch
+	133, // 245: SkipGracefulOrchestrationTerminationsRequest.reason:type_name -> google.protobuf.StringValue
+	1,   // 246: GetWorkItemsRequest.capabilities:type_name -> WorkerCapability
+	110, // 247: GetWorkItemsRequest.workItemFilters:type_name -> WorkItemFilters
+	111, // 248: WorkItemFilters.orchestrations:type_name -> OrchestrationFilter
+	112, // 249: WorkItemFilters.activities:type_name -> ActivityFilter
+	113, // 250: WorkItemFilters.entities:type_name -> EntityFilter
+	47,  // 251: WorkItem.orchestratorRequest:type_name -> OrchestratorRequest
+	3,   // 252: WorkItem.activityRequest:type_name -> ActivityRequest
+	90,  // 253: WorkItem.entityRequest:type_name -> EntityBatchRequest
+	116, // 254: WorkItem.healthPing:type_name -> HealthPing
+	92,  // 255: WorkItem.entityRequestV2:type_name -> EntityRequest
+	133, // 256: StreamInstanceHistoryRequest.executionId:type_name -> google.protobuf.StringValue
+	36,  // 257: HistoryChunk.events:type_name -> HistoryEvent
+	138, // 258: TaskFailureDetails.PropertiesEntry.value:type_name -> google.protobuf.Value
+	138, // 259: OrchestratorRequest.PropertiesEntry.value:type_name -> google.protobuf.Value
+	138, // 260: EntityBatchRequest.PropertiesEntry.value:type_name -> google.protobuf.Value
+	139, // 261: TaskHubSidecarService.Hello:input_type -> google.protobuf.Empty
+	49,  // 262: TaskHubSidecarService.StartInstance:input_type -> CreateInstanceRequest
+	52,  // 263: TaskHubSidecarService.GetInstance:input_type -> GetInstanceRequest
+	54,  // 264: TaskHubSidecarService.RewindInstance:input_type -> RewindInstanceRequest
+	73,  // 265: TaskHubSidecarService.RestartInstance:input_type -> RestartInstanceRequest
+	52,  // 266: TaskHubSidecarService.WaitForInstanceStart:input_type -> GetInstanceRequest
+	52,  // 267: TaskHubSidecarService.WaitForInstanceCompletion:input_type -> GetInstanceRequest
+	57,  // 268: TaskHubSidecarService.RaiseEvent:input_type -> RaiseEventRequest
+	59,  // 269: TaskHubSidecarService.TerminateInstance:input_type -> TerminateRequest
+	61,  // 270: TaskHubSidecarService.SuspendInstance:input_type -> SuspendRequest
+	63,  // 271: TaskHubSidecarService.ResumeInstance:input_type -> ResumeRequest
+	65,  // 272: TaskHubSidecarService.QueryInstances:input_type -> QueryInstancesRequest
+	68,  // 273: TaskHubSidecarService.ListInstanceIds:input_type -> ListInstanceIdsRequest
+	70,  // 274: TaskHubSidecarService.PurgeInstances:input_type -> PurgeInstancesRequest
+	109, // 275: TaskHubSidecarService.GetWorkItems:input_type -> GetWorkItemsRequest
+	4,   // 276: TaskHubSidecarService.CompleteActivityTask:input_type -> ActivityResponse
+	48,  // 277: TaskHubSidecarService.CompleteOrchestratorTask:input_type -> OrchestratorResponse
+	91,  // 278: TaskHubSidecarService.CompleteEntityTask:input_type -> EntityBatchResult
+	117, // 279: TaskHubSidecarService.StreamInstanceHistory:input_type -> StreamInstanceHistoryRequest
+	75,  // 280: TaskHubSidecarService.CreateTaskHub:input_type -> CreateTaskHubRequest
+	77,  // 281: TaskHubSidecarService.DeleteTaskHub:input_type -> DeleteTaskHubRequest
+	79,  // 282: TaskHubSidecarService.SignalEntity:input_type -> SignalEntityRequest
+	81,  // 283: TaskHubSidecarService.GetEntity:input_type -> GetEntityRequest
+	84,  // 284: TaskHubSidecarService.QueryEntities:input_type -> QueryEntitiesRequest
+	87,  // 285: TaskHubSidecarService.CleanEntityStorage:input_type -> CleanEntityStorageRequest
+	101, // 286: TaskHubSidecarService.AbandonTaskActivityWorkItem:input_type -> AbandonActivityTaskRequest
+	103, // 287: TaskHubSidecarService.AbandonTaskOrchestratorWorkItem:input_type -> AbandonOrchestrationTaskRequest
+	105, // 288: TaskHubSidecarService.AbandonTaskEntityWorkItem:input_type -> AbandonEntityTaskRequest
+	107, // 289: TaskHubSidecarService.SkipGracefulOrchestrationTerminations:input_type -> SkipGracefulOrchestrationTerminationsRequest
+	139, // 290: TaskHubSidecarService.Hello:output_type -> google.protobuf.Empty
+	51,  // 291: TaskHubSidecarService.StartInstance:output_type -> CreateInstanceResponse
+	53,  // 292: TaskHubSidecarService.GetInstance:output_type -> GetInstanceResponse
+	55,  // 293: TaskHubSidecarService.RewindInstance:output_type -> RewindInstanceResponse
+	74,  // 294: TaskHubSidecarService.RestartInstance:output_type -> RestartInstanceResponse
+	53,  // 295: TaskHubSidecarService.WaitForInstanceStart:output_type -> GetInstanceResponse
+	53,  // 296: TaskHubSidecarService.WaitForInstanceCompletion:output_type -> GetInstanceResponse
+	58,  // 297: TaskHubSidecarService.RaiseEvent:output_type -> RaiseEventResponse
+	60,  // 298: TaskHubSidecarService.TerminateInstance:output_type -> TerminateResponse
+	62,  // 299: TaskHubSidecarService.SuspendInstance:output_type -> SuspendResponse
+	64,  // 300: TaskHubSidecarService.ResumeInstance:output_type -> ResumeResponse
+	67,  // 301: TaskHubSidecarService.QueryInstances:output_type -> QueryInstancesResponse
+	69,  // 302: TaskHubSidecarService.ListInstanceIds:output_type -> ListInstanceIdsResponse
+	72,  // 303: TaskHubSidecarService.PurgeInstances:output_type -> PurgeInstancesResponse
+	114, // 304: TaskHubSidecarService.GetWorkItems:output_type -> WorkItem
+	115, // 305: TaskHubSidecarService.CompleteActivityTask:output_type -> CompleteTaskResponse
+	115, // 306: TaskHubSidecarService.CompleteOrchestratorTask:output_type -> CompleteTaskResponse
+	115, // 307: TaskHubSidecarService.CompleteEntityTask:output_type -> CompleteTaskResponse
+	118, // 308: TaskHubSidecarService.StreamInstanceHistory:output_type -> HistoryChunk
+	76,  // 309: TaskHubSidecarService.CreateTaskHub:output_type -> CreateTaskHubResponse
+	78,  // 310: TaskHubSidecarService.DeleteTaskHub:output_type -> DeleteTaskHubResponse
+	80,  // 311: TaskHubSidecarService.SignalEntity:output_type -> SignalEntityResponse
+	82,  // 312: TaskHubSidecarService.GetEntity:output_type -> GetEntityResponse
+	85,  // 313: TaskHubSidecarService.QueryEntities:output_type -> QueryEntitiesResponse
+	88,  // 314: TaskHubSidecarService.CleanEntityStorage:output_type -> CleanEntityStorageResponse
+	102, // 315: TaskHubSidecarService.AbandonTaskActivityWorkItem:output_type -> AbandonActivityTaskResponse
+	104, // 316: TaskHubSidecarService.AbandonTaskOrchestratorWorkItem:output_type -> AbandonOrchestrationTaskResponse
+	106, // 317: TaskHubSidecarService.AbandonTaskEntityWorkItem:output_type -> AbandonEntityTaskResponse
+	108, // 318: TaskHubSidecarService.SkipGracefulOrchestrationTerminations:output_type -> SkipGracefulOrchestrationTerminationsResponse
+	290, // [290:319] is the sub-list for method output_type
+	261, // [261:290] is the sub-list for method input_type
+	261, // [261:261] is the sub-list for extension type_name
+	261, // [261:261] is the sub-list for extension extendee
+	0,   // [0:261] is the sub-list for field type_name
 }
 
 func init() { file_orchestrator_service_proto_init() }
@@ -6249,7 +9145,7 @@ func file_orchestrator_service_proto_init() {
 	if File_orchestrator_service_proto != nil {
 		return
 	}
-	file_orchestrator_service_proto_msgTypes[26].OneofWrappers = []any{
+	file_orchestrator_service_proto_msgTypes[34].OneofWrappers = []any{
 		(*HistoryEvent_ExecutionStarted)(nil),
 		(*HistoryEvent_ExecutionCompleted)(nil),
 		(*HistoryEvent_ExecutionTerminated)(nil),
@@ -6270,31 +9166,50 @@ func file_orchestrator_service_proto_init() {
 		(*HistoryEvent_ContinueAsNew)(nil),
 		(*HistoryEvent_ExecutionSuspended)(nil),
 		(*HistoryEvent_ExecutionResumed)(nil),
+		(*HistoryEvent_EntityOperationSignaled)(nil),
+		(*HistoryEvent_EntityOperationCalled)(nil),
+		(*HistoryEvent_EntityOperationCompleted)(nil),
+		(*HistoryEvent_EntityOperationFailed)(nil),
+		(*HistoryEvent_EntityLockRequested)(nil),
+		(*HistoryEvent_EntityLockGranted)(nil),
+		(*HistoryEvent_EntityUnlockSent)(nil),
+		(*HistoryEvent_ExecutionRewound)(nil),
 	}
-	file_orchestrator_service_proto_msgTypes[33].OneofWrappers = []any{
+	file_orchestrator_service_proto_msgTypes[41].OneofWrappers = []any{
+		(*SendEntityMessageAction_EntityOperationSignaled)(nil),
+		(*SendEntityMessageAction_EntityOperationCalled)(nil),
+		(*SendEntityMessageAction_EntityLockRequested)(nil),
+		(*SendEntityMessageAction_EntityUnlockSent)(nil),
+	}
+	file_orchestrator_service_proto_msgTypes[43].OneofWrappers = []any{
 		(*OrchestratorAction_ScheduleTask)(nil),
 		(*OrchestratorAction_CreateSubOrchestration)(nil),
 		(*OrchestratorAction_CreateTimer)(nil),
 		(*OrchestratorAction_SendEvent)(nil),
 		(*OrchestratorAction_CompleteOrchestration)(nil),
 		(*OrchestratorAction_TerminateOrchestration)(nil),
+		(*OrchestratorAction_SendEntityMessage)(nil),
+		(*OrchestratorAction_RewindOrchestration)(nil),
 	}
-	file_orchestrator_service_proto_msgTypes[55].OneofWrappers = []any{
+	file_orchestrator_service_proto_msgTypes[68].OneofWrappers = []any{
 		(*PurgeInstancesRequest_InstanceId)(nil),
 		(*PurgeInstancesRequest_PurgeInstanceFilter)(nil),
+		(*PurgeInstancesRequest_InstanceBatch)(nil),
 	}
-	file_orchestrator_service_proto_msgTypes[76].OneofWrappers = []any{
+	file_orchestrator_service_proto_msgTypes[92].OneofWrappers = []any{
 		(*OperationResult_Success)(nil),
 		(*OperationResult_Failure)(nil),
 	}
-	file_orchestrator_service_proto_msgTypes[79].OneofWrappers = []any{
+	file_orchestrator_service_proto_msgTypes[96].OneofWrappers = []any{
 		(*OperationAction_SendSignal)(nil),
 		(*OperationAction_StartNewOrchestration)(nil),
 	}
-	file_orchestrator_service_proto_msgTypes[83].OneofWrappers = []any{
+	file_orchestrator_service_proto_msgTypes[112].OneofWrappers = []any{
 		(*WorkItem_OrchestratorRequest)(nil),
 		(*WorkItem_ActivityRequest)(nil),
 		(*WorkItem_EntityRequest)(nil),
+		(*WorkItem_HealthPing)(nil),
+		(*WorkItem_EntityRequestV2)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -6302,7 +9217,7 @@ func file_orchestrator_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_orchestrator_service_proto_rawDesc), len(file_orchestrator_service_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   85,
+			NumMessages:   131,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
