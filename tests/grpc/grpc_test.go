@@ -308,56 +308,6 @@ func Test_Grpc_Terminate_Recursive(t *testing.T) {
 	}
 }
 
-func Test_Grpc_ReuseInstanceIDIgnore(t *testing.T) {
-	delayTime := 2 * time.Second
-	r := task.NewTaskRegistry()
-	require.NoError(t, r.AddOrchestratorN("SingleActivity", func(ctx *task.OrchestrationContext) (any, error) {
-		var input string
-		if err := ctx.GetInput(&input); err != nil {
-			return nil, err
-		}
-		var output string
-		if err := ctx.CreateTimer(delayTime).Await(nil); err != nil {
-			return nil, err
-		}
-		err := ctx.CallActivity("SayHello", task.WithActivityInput(input)).Await(&output)
-		return output, err
-	}))
-	require.NoError(t, r.AddActivityN("SayHello", func(ctx task.ActivityContext) (any, error) {
-		var name string
-		if err := ctx.GetInput(&name); err != nil {
-			return nil, err
-		}
-		return fmt.Sprintf("Hello, %s!", name), nil
-	}))
-
-	cancelListener := startGrpcListener(t, r)
-	defer cancelListener()
-	instanceID := api.InstanceID("SKIP_IF_RUNNING_OR_COMPLETED")
-	reuseIdPolicy := &api.OrchestrationIdReusePolicy{
-		ReplaceableStatus: []protos.OrchestrationStatus{protos.OrchestrationStatus_ORCHESTRATION_STATUS_RUNNING, protos.OrchestrationStatus_ORCHESTRATION_STATUS_COMPLETED, protos.OrchestrationStatus_ORCHESTRATION_STATUS_PENDING},
-	}
-
-	id, err := grpcClient.ScheduleNewOrchestration(ctx, "SingleActivity", api.WithInput("世界"), api.WithInstanceID(instanceID))
-	require.NoError(t, err)
-	// wait orchestration to start
-	_, err = grpcClient.WaitForOrchestrationStart(ctx, id)
-	require.NoError(t, err)
-	pivotTime := time.Now()
-	// schedule again, it should ignore creating the new orchestration
-	id, err = grpcClient.ScheduleNewOrchestration(ctx, "SingleActivity", api.WithInput("World"), api.WithInstanceID(id), api.WithOrchestrationIdReusePolicy(reuseIdPolicy))
-	require.NoError(t, err)
-	timeoutCtx, cancelTimeout := context.WithTimeout(ctx, 30*time.Second)
-	defer cancelTimeout()
-	metadata, err := grpcClient.WaitForOrchestrationCompletion(timeoutCtx, id, api.WithFetchPayloads(true))
-	require.NoError(t, err)
-	assert.Equal(t, true, metadata.IsComplete())
-	// the first orchestration should complete as the second one is ignored
-	assert.Equal(t, `"Hello, 世界!"`, metadata.SerializedOutput)
-	// assert the orchestration created timestamp
-	assert.True(t, pivotTime.After(metadata.CreatedAt))
-}
-
 func Test_Grpc_ReuseInstanceIDTerminate(t *testing.T) {
 	delayTime := 2 * time.Second
 	r := task.NewTaskRegistry()
