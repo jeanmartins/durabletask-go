@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	_ "embed"
 	"errors"
 	"fmt"
@@ -497,10 +498,10 @@ func (be *postgresBackend) createOrchestrationInstanceInternal(ctx context.Conte
 }
 
 func insertOrIgnoreInstanceTableInternal(ctx context.Context, tx pgx.Tx, e *backend.HistoryEvent, startEvent *protos.ExecutionStartedEvent) (int64, error) {
-	var parentInstanceID *string
+	var parentInstanceID sql.NullString
 	if pi := startEvent.GetParentInstance(); pi != nil {
 		if instanceID := pi.GetOrchestrationInstance().GetInstanceId(); instanceID != "" {
-			parentInstanceID = &instanceID
+			parentInstanceID = sql.NullString{String: instanceID, Valid: true}
 		}
 	}
 	res, err := tx.Exec(

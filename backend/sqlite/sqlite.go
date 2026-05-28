@@ -470,10 +470,10 @@ func (be *sqliteBackend) createOrchestrationInstanceInternal(ctx context.Context
 }
 
 func insertOrIgnoreInstanceTableInternal(ctx context.Context, tx *sql.Tx, e *backend.HistoryEvent, startEvent *protos.ExecutionStartedEvent) (int64, error) {
-	var parentInstanceID *string
+	var parentInstanceID sql.NullString
 	if pi := startEvent.GetParentInstance(); pi != nil {
 		if instanceID := pi.GetOrchestrationInstance().GetInstanceId(); instanceID != "" {
-			parentInstanceID = &instanceID
+			parentInstanceID = sql.NullString{String: instanceID, Valid: true}
 		}
 	}
 	res, err := tx.ExecContext(
