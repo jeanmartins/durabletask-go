@@ -499,7 +499,9 @@ func (be *postgresBackend) createOrchestrationInstanceInternal(ctx context.Conte
 func insertOrIgnoreInstanceTableInternal(ctx context.Context, tx pgx.Tx, e *backend.HistoryEvent, startEvent *protos.ExecutionStartedEvent) (int64, error) {
 	var parentInstanceID *string
 	if pi := startEvent.GetParentInstance(); pi != nil {
-		parentInstanceID = &pi.OrchestrationInstance.InstanceId
+		if instanceID := pi.GetOrchestrationInstance().GetInstanceId(); instanceID != "" {
+			parentInstanceID = &instanceID
+		}
 	}
 	res, err := tx.Exec(
 		ctx,
