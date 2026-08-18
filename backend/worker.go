@@ -47,6 +47,8 @@ type worker struct {
 	processor TaskProcessor
 	waiting   bool
 	stop      atomic.Bool
+	// consecutiveErrors tracks connection failures for reconnection logging
+	consecutiveErrors atomic.Int32
 }
 
 type NewTaskWorkerOptions func(*WorkerOptions)
@@ -113,6 +115,9 @@ func (w *worker) Start(ctx context.Context) {
 			switch {
 			case ok:
 				// found a work item - reset the backoff and check for the next item
+				if w.waiting {
+					w.logger.Infof("%v: reconnected and ready to process work items", w.Name())
+				}
 				b.Reset()
 			case err != nil && errors.Is(err, ctx.Err()):
 				// there's an error and it's due to the context being canceled
@@ -174,6 +179,11 @@ func (w *worker) ProcessNext(ctx context.Context) (bool, error) {
 	wi, err := w.processor.FetchWorkItem(ctx)
 	switch {
 	case errors.Is(err, ErrNoWorkItems) || wi == nil:
+		// Check if we recovered from connection errors
+		if w.consecutiveErrors.Load() > 0 {
+			w.logger.Infof("%v: reconnected and ready to process work items", w.Name())
+			w.consecutiveErrors.Store(0)
+		}
 		if !w.waiting {
 			w.logger.Debugf("%v: waiting for new work items...", w.Name())
 			w.waiting = true
@@ -182,9 +192,16 @@ func (w *worker) ProcessNext(ctx context.Context) (bool, error) {
 	case err != nil:
 		if !errors.Is(err, ctx.Err()) {
 			w.logger.Errorf("%v: failed to fetch work item: %v", w.Name(), err)
+			// Increment error counter for connection-related errors
+			w.consecutiveErrors.Add(1)
 		}
 		return false, err
 	default:
+		// Check if we recovered from connection errors when successfully fetching work item
+		if w.consecutiveErrors.Load() > 0 {
+			w.logger.Infof("%v: reconnected and ready to process work items", w.Name())
+			w.consecutiveErrors.Store(0)
+		}
 		// process the work-item in the background
 		w.waiting = false
 		processing = true
