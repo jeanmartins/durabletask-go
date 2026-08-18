@@ -179,7 +179,7 @@ func (w *worker) ProcessNext(ctx context.Context) (bool, error) {
 	wi, err := w.processor.FetchWorkItem(ctx)
 	switch {
 	case errors.Is(err, ErrNoWorkItems) || wi == nil:
-		// Check if we recovered from connection errors
+		// Check if we recovered from errors when no work items
 		if w.consecutiveErrors.Load() > 0 {
 			w.logger.Infof("%v: reconnected and ready to process work items", w.Name())
 			w.consecutiveErrors.Store(0)
@@ -192,12 +192,12 @@ func (w *worker) ProcessNext(ctx context.Context) (bool, error) {
 	case err != nil:
 		if !errors.Is(err, ctx.Err()) {
 			w.logger.Errorf("%v: failed to fetch work item: %v", w.Name(), err)
-			// Increment error counter for connection-related errors
+			// Increment error counter for fetch failures
 			w.consecutiveErrors.Add(1)
 		}
 		return false, err
 	default:
-		// Check if we recovered from connection errors when successfully fetching work item
+		// Check if we recovered from errors when successfully fetching work item
 		if w.consecutiveErrors.Load() > 0 {
 			w.logger.Infof("%v: reconnected and ready to process work items", w.Name())
 			w.consecutiveErrors.Store(0)
