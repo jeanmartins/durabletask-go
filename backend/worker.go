@@ -47,7 +47,7 @@ type worker struct {
 	processor TaskProcessor
 	waiting   bool
 	stop      atomic.Bool
-	// consecutiveErrors tracks connection failures for reconnection logging
+	// consecutiveErrors tracks consecutive FetchWorkItem failures for recovery logging
 	consecutiveErrors atomic.Int32
 }
 
