@@ -115,9 +115,6 @@ func (w *worker) Start(ctx context.Context) {
 			switch {
 			case ok:
 				// found a work item - reset the backoff and check for the next item
-				if w.waiting {
-					w.logger.Infof("%v: reconnected and ready to process work items", w.Name())
-				}
 				b.Reset()
 			case err != nil && errors.Is(err, ctx.Err()):
 				// there's an error and it's due to the context being canceled
